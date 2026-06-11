@@ -1,6 +1,7 @@
 package com.example.cityflowbkk.features.home
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -57,6 +58,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -92,6 +95,7 @@ data class PopularPlaceUiModel(
     val nearestStation: String,
     val rating: String,
     val imageColor: Color,
+    val imageResId: Int? = null,
 )
 
 @Immutable
@@ -300,8 +304,16 @@ private fun HeroCard(onPlanRouteClick: () -> Unit) {
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            BangkokTransitIllustration(
+            Image(
+                painter = painterResource(R.drawable.banner_home),
+                contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.35f)),
             )
             Column(
                 modifier = Modifier
@@ -334,58 +346,6 @@ private fun HeroCard(onPlanRouteClick: () -> Unit) {
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun BangkokTransitIllustration(modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier) {
-        drawCircle(
-            color = Color.White.copy(alpha = 0.14f),
-            radius = size.width * 0.32f,
-            center = Offset(size.width * 0.86f, size.height * 0.18f),
-        )
-        val skylineBase = size.height * 0.7f
-        val buildingColor = Color.White.copy(alpha = 0.22f)
-        repeat(7) { index ->
-            val width = size.width * (0.055f + index * 0.003f)
-            val height = size.height * (0.18f + (index % 3) * 0.08f)
-            val left = size.width * (0.48f + index * 0.07f)
-            drawRect(
-                color = buildingColor,
-                topLeft = Offset(left, skylineBase - height),
-                size = Size(width, height),
-            )
-        }
-        val trackY = size.height * 0.78f
-        drawLine(
-            color = Color.White.copy(alpha = 0.45f),
-            start = Offset(size.width * 0.42f, trackY),
-            end = Offset(size.width * 0.94f, trackY),
-            strokeWidth = 5.dp.toPx(),
-            cap = StrokeCap.Round,
-        )
-        val trainPath = Path().apply {
-            moveTo(size.width * 0.52f, size.height * 0.48f)
-            quadraticTo(
-                size.width * 0.82f,
-                size.height * 0.4f,
-                size.width * 0.94f,
-                size.height * 0.55f,
-            )
-            lineTo(size.width * 0.88f, size.height * 0.7f)
-            lineTo(size.width * 0.48f, size.height * 0.7f)
-            close()
-        }
-        drawPath(trainPath, Color.White.copy(alpha = 0.9f))
-        drawRoundRect(
-            color = CityFlowGreen,
-            topLeft = Offset(size.width * 0.56f, size.height * 0.53f),
-            size = Size(size.width * 0.2f, size.height * 0.06f),
-            cornerRadius = CornerRadius(6.dp.toPx()),
-        )
-        drawCircle(Color.White, radius = 5.dp.toPx(), center = Offset(size.width * 0.58f, size.height * 0.7f))
-        drawCircle(Color.White, radius = 5.dp.toPx(), center = Offset(size.width * 0.84f, size.height * 0.7f))
     }
 }
 
@@ -504,16 +464,29 @@ private fun PopularPlaceCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(92.dp)
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                place.imageColor.copy(alpha = 0.9f),
-                                place.imageColor.copy(alpha = 0.48f),
-                            ),
-                        ),
-                    ),
+                    .height(92.dp),
             ) {
+                if (place.name == "Siam Paragon") {
+                    Image(
+                        painter = painterResource(place.imageResId ?: R.drawable.siam_paragon),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        place.imageColor.copy(alpha = 0.9f),
+                                        place.imageColor.copy(alpha = 0.48f),
+                                    ),
+                                ),
+                            ),
+                    )
+                }
                 HomeIconGraphic(
                     icon = HomeIcon.Station,
                     contentDescription = null,
@@ -768,7 +741,7 @@ private val sampleQuickActions = listOf(
 
 private val samplePopularPlaces = listOf(
     PopularPlaceUiModel("ICONSIAM", "Charoen Nakhon BTS", "4.8", CityFlowBlue),
-    PopularPlaceUiModel("Siam Paragon", "Siam BTS", "4.7", CityFlowGreen),
+    PopularPlaceUiModel("Siam Paragon", "Siam BTS", "4.7", CityFlowGreen, R.drawable.siam_paragon),
     PopularPlaceUiModel("Chatuchak Market", "Mo Chit BTS", "4.6", CityFlowOrange),
     PopularPlaceUiModel("Asiatique", "Saphan Taksin BTS", "4.5", Color(0xFF7E57C2)),
     PopularPlaceUiModel("Grand Palace", "Sanam Chai MRT", "4.8", Color(0xFF00ACC1)),
