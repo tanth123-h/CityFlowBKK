@@ -43,6 +43,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -68,7 +69,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cityflowbkk.R
+import com.example.cityflowbkk.features.place.PlaceDetailBottomSheet
+import com.example.cityflowbkk.features.place.PlaceDetailViewModel
 import com.example.cityflowbkk.ui.theme.CityFlowBKKTheme
 import com.example.cityflowbkk.ui.theme.CityFlowBlue
 import com.example.cityflowbkk.ui.theme.CityFlowGreen
@@ -96,6 +100,9 @@ data class PopularPlaceUiModel(
     val rating: String,
     val imageColor: Color,
     val imageResId: Int? = null,
+    val placeId: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )
 
 @Immutable
@@ -123,7 +130,6 @@ enum class BottomNavItem(
     val icon: HomeIcon,
 ) {
     Home("Home", HomeIcon.Home),
-    Map("Map", HomeIcon.Map),
     Route("Route", HomeIcon.Route),
     Station("Station", HomeIcon.Station),
     Profile("Profile", HomeIcon.Profile),
@@ -134,11 +140,13 @@ fun HomeScreen(
     onSearchQueryChange: (String) -> Unit = {},
     onPlanRouteClick: () -> Unit = {},
     onQuickActionClick: (QuickActionUiModel) -> Unit = {},
-    onPopularPlaceClick: (PopularPlaceUiModel) -> Unit = {},
     onRecentSearchClick: (RecentSearchUiModel) -> Unit = {},
     onBottomNavItemClick: (BottomNavItem) -> Unit = {},
+    placeDetailViewModel: PlaceDetailViewModel = viewModel(),
 ) {
     var localSearchQuery by remember(uiState.searchQuery) { mutableStateOf(uiState.searchQuery) }
+    var selectedPopularPlace by remember { mutableStateOf<PopularPlaceUiModel?>(null) }
+    val placeDetailUiState by placeDetailViewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -175,13 +183,26 @@ fun HomeScreen(
             )
             PopularPlacesSection(
                 places = uiState.popularPlaces,
-                onPlaceClick = onPopularPlaceClick,
+                onPlaceClick = { place ->
+                    selectedPopularPlace = place
+                    placeDetailViewModel.loadPlace(place)
+                },
             )
             RecentSearchesSection(
                 searches = uiState.recentSearches,
                 onRecentSearchClick = onRecentSearchClick,
             )
         }
+    }
+
+    if (selectedPopularPlace != null) {
+        PlaceDetailBottomSheet(
+            uiState = placeDetailUiState,
+            onDismiss = {
+                selectedPopularPlace = null
+                placeDetailViewModel.clear()
+            },
+        )
     }
 }
 
@@ -740,11 +761,11 @@ private val sampleQuickActions = listOf(
 )
 
 private val samplePopularPlaces = listOf(
-    PopularPlaceUiModel("ICONSIAM", "Charoen Nakhon BTS", "4.8", CityFlowBlue),
-    PopularPlaceUiModel("Siam Paragon", "Siam BTS", "4.7", CityFlowGreen, R.drawable.siam_paragon),
-    PopularPlaceUiModel("Chatuchak Market", "Mo Chit BTS", "4.6", CityFlowOrange),
-    PopularPlaceUiModel("Asiatique", "Saphan Taksin BTS", "4.5", Color(0xFF7E57C2)),
-    PopularPlaceUiModel("Grand Palace", "Sanam Chai MRT", "4.8", Color(0xFF00ACC1)),
+    PopularPlaceUiModel("ICONSIAM", "Charoen Nakhon BTS", "4.8", CityFlowBlue, latitude = 13.7266, longitude = 100.5108),
+    PopularPlaceUiModel("Siam Paragon", "Siam BTS", "4.7", CityFlowGreen, R.drawable.siam_paragon, latitude = 13.7466, longitude = 100.5347),
+    PopularPlaceUiModel("Chatuchak Market", "Mo Chit BTS", "4.6", CityFlowOrange, latitude = 13.7999, longitude = 100.5501),
+    PopularPlaceUiModel("Asiatique", "Saphan Taksin BTS", "4.5", Color(0xFF7E57C2), latitude = 13.7042, longitude = 100.5036),
+    PopularPlaceUiModel("Grand Palace", "Sanam Chai MRT", "4.8", Color(0xFF00ACC1), latitude = 13.7500, longitude = 100.4913),
 )
 
 private val sampleRecentSearches = listOf(
