@@ -1,0 +1,66 @@
+package com.example.cityflowbkk.navigation
+
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.example.cityflowbkk.features.common.PlaceholderScreen
+import com.example.cityflowbkk.features.home.HomeScreen
+import com.example.cityflowbkk.features.map.MapScreen
+import com.example.cityflowbkk.ui.icons.HomeIcon
+import com.example.cityflowbkk.ui.navigation.CityFlowBottomBar
+
+@Composable
+fun MainScreen() {
+    val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val selectedItem = routeToBottomNavItem(currentRoute)
+
+    Scaffold(
+        bottomBar = {
+            CityFlowBottomBar(
+                selectedItem = selectedItem,
+                onItemClick = { item ->
+                    if (item.route != currentRoute) {
+                        navController.navigate(item.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                },
+            )
+        },
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = Screen.Home.route,
+            modifier = Modifier.padding(innerPadding),
+        ) {
+            composable(Screen.Home.route) {
+                HomeScreen()
+            }
+            composable(Screen.Route.route) {
+                PlaceholderScreen(title = "Route", icon = HomeIcon.Route)
+            }
+            composable(Screen.Map.route) {
+                MapScreen()
+            }
+            composable(Screen.Station.route) {
+                PlaceholderScreen(title = "Station", icon = HomeIcon.Station)
+            }
+            composable(Screen.Profile.route) {
+                PlaceholderScreen(title = "Profile", icon = HomeIcon.Profile)
+            }
+        }
+    }
+}
