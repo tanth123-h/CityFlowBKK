@@ -1,6 +1,5 @@
 package com.example.cityflowbkk.features.home
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -32,8 +30,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -51,20 +47,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -73,6 +61,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cityflowbkk.R
 import com.example.cityflowbkk.features.place.PlaceDetailBottomSheet
 import com.example.cityflowbkk.features.place.PlaceDetailViewModel
+import com.example.cityflowbkk.ui.icons.HomeIcon
+import com.example.cityflowbkk.ui.icons.HomeIconGraphic
 import com.example.cityflowbkk.ui.theme.CityFlowBKKTheme
 import com.example.cityflowbkk.ui.theme.CityFlowBlue
 import com.example.cityflowbkk.ui.theme.CityFlowGreen
@@ -83,7 +73,6 @@ data class HomeUiState(
     val quickActions: List<QuickActionUiModel> = sampleQuickActions,
     val popularPlaces: List<PopularPlaceUiModel> = samplePopularPlaces,
     val recentSearches: List<RecentSearchUiModel> = sampleRecentSearches,
-    val selectedBottomItem: BottomNavItem = BottomNavItem.Home,
 )
 
 @Immutable
@@ -111,37 +100,15 @@ data class RecentSearchUiModel(
     val destination: String,
 )
 
-enum class HomeIcon {
-    Route,
-    Train,
-    Subway,
-    Ticket,
-    School,
-    Search,
-    Notification,
-    Home,
-    Map,
-    Station,
-    Profile,
-}
-
-enum class BottomNavItem(
-    val label: String,
-    val icon: HomeIcon,
-) {
-    Home("Home", HomeIcon.Home),
-    Route("Route", HomeIcon.Route),
-    Station("Station", HomeIcon.Station),
-    Profile("Profile", HomeIcon.Profile),
-}
 @Composable
 fun HomeScreen(
     uiState: HomeUiState = HomeUiState(),
     onSearchQueryChange: (String) -> Unit = {},
     onPlanRouteClick: () -> Unit = {},
+    onNavigateToMap: () -> Unit = {},
     onQuickActionClick: (QuickActionUiModel) -> Unit = {},
+    onPopularPlaceClick: (PopularPlaceUiModel) -> Unit = {},
     onRecentSearchClick: (RecentSearchUiModel) -> Unit = {},
-    onBottomNavItemClick: (BottomNavItem) -> Unit = {},
     placeDetailViewModel: PlaceDetailViewModel = viewModel(),
 ) {
     var localSearchQuery by remember(uiState.searchQuery) { mutableStateOf(uiState.searchQuery) }
@@ -151,12 +118,6 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             CityFlowTopAppBar()
-        },
-        bottomBar = {
-            CityFlowBottomBar(
-                selectedItem = uiState.selectedBottomItem,
-                onItemClick = onBottomNavItemClick,
-            )
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
@@ -179,7 +140,12 @@ fun HomeScreen(
             HeroCard(onPlanRouteClick = onPlanRouteClick)
             QuickActionsGrid(
                 quickActions = uiState.quickActions,
-                onQuickActionClick = onQuickActionClick,
+                onQuickActionClick = { action ->
+                    when (action.title) {
+                        "Plan Route", "Smart Search" -> onNavigateToMap()
+                        else -> onQuickActionClick(action)
+                    }
+                },
             )
             PopularPlacesSection(
                 places = uiState.popularPlaces,
@@ -487,9 +453,9 @@ private fun PopularPlaceCard(
                     .fillMaxWidth()
                     .height(92.dp),
             ) {
-                if (place.name == "Siam Paragon") {
+                if (place.imageResId != null) {
                     Image(
-                        painter = painterResource(place.imageResId ?: R.drawable.siam_paragon),
+                        painter = painterResource(place.imageResId),
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
@@ -596,161 +562,6 @@ private fun SectionTitle(title: String) {
     )
 }
 
-@Composable
-private fun CityFlowBottomBar(
-    selectedItem: BottomNavItem,
-    onItemClick: (BottomNavItem) -> Unit,
-) {
-    NavigationBar(
-        modifier = Modifier.navigationBarsPadding(),
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 4.dp,
-    ) {
-        BottomNavItem.entries.forEach { item ->
-            NavigationBarItem(
-                selected = item == selectedItem,
-                onClick = { onItemClick(item) },
-                icon = {
-                    HomeIconGraphic(
-                        icon = item.icon,
-                        contentDescription = item.label,
-                    )
-                },
-                label = {
-                    Text(item.label)
-                },
-            )
-        }
-    }
-}
-
-@Composable
-private fun HomeIconGraphic(
-    icon: HomeIcon,
-    contentDescription: String?,
-    modifier: Modifier = Modifier,
-    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-) {
-    val finalModifier = modifier.size(24.dp)
-    val semanticModifier = if (contentDescription == null) {
-        finalModifier
-    } else {
-        finalModifier.semantics { this.contentDescription = contentDescription }
-    }
-    Canvas(modifier = semanticModifier) {
-        val stroke = Stroke(width = size.minDimension * 0.09f, cap = StrokeCap.Round)
-        fun point(x: Float, y: Float) = Offset(size.width * x, size.height * y)
-
-        when (icon) {
-            HomeIcon.Search -> {
-                drawCircle(tint, radius = size.minDimension * 0.27f, center = point(0.43f, 0.43f), style = stroke)
-                drawLine(tint, point(0.64f, 0.64f), point(0.86f, 0.86f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-            }
-
-            HomeIcon.Route -> {
-                val path = Path().apply {
-                    moveTo(size.width * 0.22f, size.height * 0.78f)
-                    quadraticTo(size.width * 0.46f, size.height * 0.3f, size.width * 0.78f, size.height * 0.22f)
-                }
-                drawPath(path, tint, style = stroke)
-                drawCircle(tint, radius = size.minDimension * 0.12f, center = point(0.22f, 0.78f))
-                drawCircle(tint, radius = size.minDimension * 0.12f, center = point(0.78f, 0.22f))
-            }
-
-            HomeIcon.Train, HomeIcon.Subway -> {
-                drawRoundRect(
-                    color = tint,
-                    topLeft = point(0.23f, 0.14f),
-                    size = Size(size.width * 0.54f, size.height * 0.58f),
-                    cornerRadius = CornerRadius(size.minDimension * 0.12f),
-                    style = stroke,
-                )
-                drawLine(tint, point(0.34f, 0.32f), point(0.66f, 0.32f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.34f, 0.52f), point(0.66f, 0.52f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.38f, 0.86f), point(0.48f, 0.72f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.62f, 0.86f), point(0.52f, 0.72f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-            }
-
-            HomeIcon.Ticket -> {
-                val path = Path().apply {
-                    moveTo(size.width * 0.14f, size.height * 0.32f)
-                    lineTo(size.width * 0.84f, size.height * 0.2f)
-                    lineTo(size.width * 0.9f, size.height * 0.46f)
-                    lineTo(size.width * 0.8f, size.height * 0.54f)
-                    lineTo(size.width * 0.86f, size.height * 0.78f)
-                    lineTo(size.width * 0.16f, size.height * 0.66f)
-                    lineTo(size.width * 0.24f, size.height * 0.52f)
-                    close()
-                }
-                drawPath(path, tint, style = stroke)
-                drawLine(tint, point(0.48f, 0.28f), point(0.56f, 0.7f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-            }
-
-            HomeIcon.School -> {
-                val cap = Path().apply {
-                    moveTo(size.width * 0.5f, size.height * 0.16f)
-                    lineTo(size.width * 0.88f, size.height * 0.36f)
-                    lineTo(size.width * 0.5f, size.height * 0.56f)
-                    lineTo(size.width * 0.12f, size.height * 0.36f)
-                    close()
-                }
-                drawPath(cap, tint)
-                drawLine(tint, point(0.26f, 0.5f), point(0.26f, 0.7f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.26f, 0.7f), point(0.74f, 0.7f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.74f, 0.7f), point(0.74f, 0.5f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-            }
-
-            HomeIcon.Notification -> {
-                val path = Path().apply {
-                    moveTo(size.width * 0.28f, size.height * 0.68f)
-                    quadraticTo(size.width * 0.38f, size.height * 0.52f, size.width * 0.34f, size.height * 0.34f)
-                    quadraticTo(size.width * 0.5f, size.height * 0.12f, size.width * 0.66f, size.height * 0.34f)
-                    quadraticTo(size.width * 0.62f, size.height * 0.52f, size.width * 0.72f, size.height * 0.68f)
-                    close()
-                }
-                drawPath(path, tint, style = stroke)
-                drawLine(tint, point(0.42f, 0.82f), point(0.58f, 0.82f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-            }
-
-            HomeIcon.Home -> {
-                drawLine(tint, point(0.14f, 0.46f), point(0.5f, 0.18f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.5f, 0.18f), point(0.86f, 0.46f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.25f, 0.42f), point(0.25f, 0.84f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.75f, 0.42f), point(0.75f, 0.84f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.25f, 0.84f), point(0.75f, 0.84f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-            }
-
-            HomeIcon.Map -> {
-                drawLine(tint, point(0.16f, 0.24f), point(0.36f, 0.16f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.36f, 0.16f), point(0.64f, 0.26f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.64f, 0.26f), point(0.84f, 0.18f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.16f, 0.24f), point(0.16f, 0.84f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.36f, 0.16f), point(0.36f, 0.76f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.64f, 0.26f), point(0.64f, 0.86f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.84f, 0.18f), point(0.84f, 0.78f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.16f, 0.84f), point(0.36f, 0.76f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.36f, 0.76f), point(0.64f, 0.86f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.64f, 0.86f), point(0.84f, 0.78f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-            }
-
-            HomeIcon.Station -> {
-                drawCircle(tint, radius = size.minDimension * 0.27f, center = point(0.5f, 0.38f), style = stroke)
-                drawCircle(tint, radius = size.minDimension * 0.1f, center = point(0.5f, 0.38f))
-                drawLine(tint, point(0.5f, 0.65f), point(0.5f, 0.9f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-            }
-
-            HomeIcon.Profile -> {
-                drawCircle(tint, radius = size.minDimension * 0.17f, center = point(0.5f, 0.32f), style = stroke)
-                val shoulders = Path().apply {
-                    moveTo(size.width * 0.18f, size.height * 0.86f)
-                    quadraticTo(size.width * 0.5f, size.height * 0.56f, size.width * 0.82f, size.height * 0.86f)
-                }
-                drawPath(shoulders, tint, style = stroke)
-            }
-        }
-    }
-}
-
 private val sampleQuickActions = listOf(
     QuickActionUiModel("Plan Route", HomeIcon.Route, CityFlowBlue),
     QuickActionUiModel("BTS Guide", HomeIcon.Train, CityFlowGreen),
@@ -761,11 +572,11 @@ private val sampleQuickActions = listOf(
 )
 
 private val samplePopularPlaces = listOf(
-    PopularPlaceUiModel("ICONSIAM", "Charoen Nakhon BTS", "4.8", CityFlowBlue, latitude = 13.7266, longitude = 100.5108),
-    PopularPlaceUiModel("Siam Paragon", "Siam BTS", "4.7", CityFlowGreen, R.drawable.siam_paragon, latitude = 13.7466, longitude = 100.5347),
-    PopularPlaceUiModel("Chatuchak Market", "Mo Chit BTS", "4.6", CityFlowOrange, latitude = 13.7999, longitude = 100.5501),
-    PopularPlaceUiModel("Asiatique", "Saphan Taksin BTS", "4.5", Color(0xFF7E57C2), latitude = 13.7042, longitude = 100.5036),
-    PopularPlaceUiModel("Grand Palace", "Sanam Chai MRT", "4.8", Color(0xFF00ACC1), latitude = 13.7500, longitude = 100.4913),
+    PopularPlaceUiModel("ICONSIAM", "Charoen Nakhon BTS", "4.8", CityFlowBlue, imageResId = R.drawable.download, latitude = 13.7266, longitude = 100.5108),
+    PopularPlaceUiModel("Siam Paragon", "Siam BTS", "4.7", CityFlowGreen, imageResId = R.drawable.siam_paragon, latitude = 13.7466, longitude = 100.5347),
+    PopularPlaceUiModel("Chatuchak Market", "Mo Chit BTS", "4.6", CityFlowOrange, imageResId = R.drawable.images, latitude = 13.7999, longitude = 100.5501),
+    PopularPlaceUiModel("Asiatique", "Saphan Taksin BTS", "4.5", Color(0xFF7E57C2), imageResId = R.drawable.asiatique, latitude = 13.7042, longitude = 100.5036),
+    PopularPlaceUiModel("Grand Palace", "Sanam Chai MRT", "4.8", Color(0xFF00ACC1), imageResId = R.drawable.grandplace, latitude = 13.7500, longitude = 100.4913),
 )
 
 private val sampleRecentSearches = listOf(
