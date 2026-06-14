@@ -146,7 +146,24 @@ class PlaceDetailsRepository(
         }
     }
 
-    private companion object {
+}
 
-    }
+private val placeDetailsFields = listOf(
+    "id",
+    "displayName",
+    "photos",
+    "rating",
+    "userRatingCount",
+    "formattedAddress",
+    "regularOpeningHours",
+    "websiteUri",
+    "nationalPhoneNumber",
+    "editorialSummary",
+    "location",
+)
+
+private val PLACE_DETAILS_FIELD_MASK = placeDetailsFields.joinToString(",")
+
+private val PLACE_SEARCH_FIELD_MASK = placeDetailsFields.joinToString(",") { field ->
+    "places.$field"
 }
