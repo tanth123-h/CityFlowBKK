@@ -147,24 +147,6 @@ class PlaceDetailsRepository(
     }
 
     private companion object {
-        val PLACE_DETAILS_FIELDS = listOf(
-            "id",
-            "displayName",
-            "photos",
-            "rating",
-            "userRatingCount",
-            "formattedAddress",
-            "regularOpeningHours",
-            "websiteUri",
-            "nationalPhoneNumber",
-            "editorialSummary",
-            "location",
-        )
 
-        val PLACE_DETAILS_FIELD_MASK = PLACE_DETAILS_FIELDS.joinToString(",")
-
-        val PLACE_SEARCH_FIELD_MASK = PLACE_DETAILS_FIELDS.joinToString(",") { field ->
-            "places.$field"
-        }
     }
 }
