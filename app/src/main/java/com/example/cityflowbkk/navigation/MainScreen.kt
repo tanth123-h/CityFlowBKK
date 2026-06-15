@@ -24,6 +24,7 @@ fun MainScreen() {
     Scaffold(
         bottomBar = {
             CityFlowBottomBar(
+                selectedItem = routeToBottomNavItem(currentRoute),
                 onItemClick = { item ->
                     navController.navigate(item.route) {
                         popUpTo(navController.graph.findStartDestination().id) {
@@ -34,17 +35,21 @@ fun MainScreen() {
                     }
                 }
             )
+        }
     ) { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = Screen.Home.route,
+            modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Home.route) {
                 HomeScreen()
             }
             composable(Screen.Route.route) {
+                PlaceholderScreen(title = "Routes", icon = HomeIcon.Route)
             }
             composable(Screen.Station.route) {
+                PlaceholderScreen(title = "Stations", icon = HomeIcon.Station)
             }
             composable(Screen.Profile.route) {
                 PlaceholderScreen(title = "Profile", icon = HomeIcon.Profile)
