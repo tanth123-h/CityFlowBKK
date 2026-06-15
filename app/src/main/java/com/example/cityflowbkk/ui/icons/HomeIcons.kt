@@ -26,7 +26,6 @@ enum class HomeIcon {
     Notification,
     Home,
     Map,
-    MyLocation,
     Station,
     Profile,
 }
@@ -138,15 +137,6 @@ fun HomeIconGraphic(
                 drawLine(tint, point(0.16f, 0.84f), point(0.36f, 0.76f), strokeWidth = stroke.width, cap = StrokeCap.Round)
                 drawLine(tint, point(0.36f, 0.76f), point(0.64f, 0.86f), strokeWidth = stroke.width, cap = StrokeCap.Round)
                 drawLine(tint, point(0.64f, 0.86f), point(0.84f, 0.78f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-            }
-
-            HomeIcon.MyLocation -> {
-                drawCircle(tint, radius = size.minDimension * 0.08f, center = point(0.5f, 0.5f))
-                drawCircle(tint, radius = size.minDimension * 0.24f, center = point(0.5f, 0.5f), style = stroke)
-                drawLine(tint, point(0.5f, 0.12f), point(0.5f, 0.24f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.5f, 0.76f), point(0.5f, 0.88f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.12f, 0.5f), point(0.24f, 0.5f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawLine(tint, point(0.76f, 0.5f), point(0.88f, 0.5f), strokeWidth = stroke.width, cap = StrokeCap.Round)
             }
 
             HomeIcon.Station -> {

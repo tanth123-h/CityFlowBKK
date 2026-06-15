@@ -9,6 +9,7 @@ enum class BottomNavItem(
 ) {
     Home(Screen.Home.route, "Home", HomeIcon.Home),
     Route(Screen.Route.route, "Route", HomeIcon.Route),
+    Map(Screen.Map.route, "Map", HomeIcon.Map),
     Station(Screen.Station.route, "Station", HomeIcon.Station),
     Profile(Screen.Profile.route, "Profile", HomeIcon.Profile),
 }
