@@ -565,10 +565,8 @@ private fun SectionTitle(title: String) {
 private val sampleQuickActions = listOf(
     QuickActionUiModel("Plan Route", HomeIcon.Route, CityFlowBlue),
     QuickActionUiModel("BTS Guide", HomeIcon.Train, CityFlowGreen),
-    QuickActionUiModel("MRT Guide", HomeIcon.Subway, CityFlowOrange),
     QuickActionUiModel("Ticket Guide", HomeIcon.Ticket, Color(0xFF7E57C2)),
     QuickActionUiModel("Tutorials", HomeIcon.School, Color(0xFF00ACC1)),
-    QuickActionUiModel("Smart Search", HomeIcon.Search, Color(0xFFEF6C00)),
 )
 
 private val samplePopularPlaces = listOf(
