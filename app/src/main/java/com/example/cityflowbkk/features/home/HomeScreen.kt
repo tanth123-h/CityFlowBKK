@@ -30,10 +30,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -69,10 +66,8 @@ import com.example.cityflowbkk.ui.theme.CityFlowGreen
 import com.example.cityflowbkk.ui.theme.CityFlowOrange
 @Immutable
 data class HomeUiState(
-    val searchQuery: String = "",
     val quickActions: List<QuickActionUiModel> = sampleQuickActions,
     val popularPlaces: List<PopularPlaceUiModel> = samplePopularPlaces,
-    val recentSearches: List<RecentSearchUiModel> = sampleRecentSearches,
 )
 
 @Immutable
@@ -94,24 +89,15 @@ data class PopularPlaceUiModel(
     val longitude: Double? = null,
 )
 
-@Immutable
-data class RecentSearchUiModel(
-    val origin: String,
-    val destination: String,
-)
-
 @Composable
 fun HomeScreen(
     uiState: HomeUiState = HomeUiState(),
-    onSearchQueryChange: (String) -> Unit = {},
     onPlanRouteClick: () -> Unit = {},
     onNavigateToMap: () -> Unit = {},
     onQuickActionClick: (QuickActionUiModel) -> Unit = {},
     onPopularPlaceClick: (PopularPlaceUiModel) -> Unit = {},
-    onRecentSearchClick: (RecentSearchUiModel) -> Unit = {},
     placeDetailViewModel: PlaceDetailViewModel = viewModel(),
 ) {
-    var localSearchQuery by remember(uiState.searchQuery) { mutableStateOf(uiState.searchQuery) }
     var selectedPopularPlace by remember { mutableStateOf<PopularPlaceUiModel?>(null) }
     val placeDetailUiState by placeDetailViewModel.uiState.collectAsState()
 
@@ -130,13 +116,6 @@ fun HomeScreen(
                 .padding(top = 16.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(22.dp),
         ) {
-            WelcomeSection(
-                searchQuery = localSearchQuery,
-                onSearchQueryChange = {
-                    localSearchQuery = it
-                    onSearchQueryChange(it)
-                },
-            )
             HeroCard(onPlanRouteClick = onPlanRouteClick)
             QuickActionsGrid(
                 quickActions = uiState.quickActions,
@@ -153,10 +132,6 @@ fun HomeScreen(
                     selectedPopularPlace = place
                     placeDetailViewModel.loadPlace(place)
                 },
-            )
-            RecentSearchesSection(
-                searches = uiState.recentSearches,
-                onRecentSearchClick = onRecentSearchClick,
             )
         }
     }
@@ -232,50 +207,6 @@ private fun CityFlowLogo() {
             color = Color.White,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Black,
-        )
-    }
-}
-@Composable
-private fun WelcomeSection(
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = "Hello \uD83D\uDC4B",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = "Where would you like to go today?",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-        }
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = onSearchQueryChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = {
-                Text("Search station, landmark, destination...")
-            },
-            leadingIcon = {
-                HomeIconGraphic(
-                    icon = HomeIcon.Search,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(20.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = Color.Transparent,
-            ),
         )
     }
 }
@@ -513,46 +444,6 @@ private fun PopularPlaceCard(
 }
 
 @Composable
-private fun RecentSearchesSection(
-    searches: List<RecentSearchUiModel>,
-    onRecentSearchClick: (RecentSearchUiModel) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionTitle("Recent Searches")
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            searches.forEach { search ->
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(role = Role.Button) { onRecentSearchClick(search) },
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 1.dp,
-                    shadowElevation = 1.dp,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        HomeIconGraphic(
-                            icon = HomeIcon.Route,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                        Text(
-                            text = "${search.origin} -> ${search.destination}",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun SectionTitle(title: String) {
     Text(
         text = title,
@@ -575,11 +466,6 @@ private val samplePopularPlaces = listOf(
     PopularPlaceUiModel("Chatuchak Market", "Mo Chit BTS", "4.6", CityFlowOrange, imageResId = R.drawable.images, latitude = 13.7999, longitude = 100.5501),
     PopularPlaceUiModel("Asiatique", "Saphan Taksin BTS", "4.5", Color(0xFF7E57C2), imageResId = R.drawable.asiatique, latitude = 13.7042, longitude = 100.5036),
     PopularPlaceUiModel("Grand Palace", "Sanam Chai MRT", "4.8", Color(0xFF00ACC1), imageResId = R.drawable.grandplace, latitude = 13.7500, longitude = 100.4913),
-)
-
-private val sampleRecentSearches = listOf(
-    RecentSearchUiModel("Siam", "Mo Chit"),
-    RecentSearchUiModel("Asok", "Chatuchak Park"),
 )
 
 @Preview(showBackground = true, widthDp = 390, heightDp = 900)
