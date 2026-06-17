@@ -51,5 +51,16 @@ data class RouteUiModel(
     val arrivalTimeText: String,
 )
 
+@Immutable
+data class NavigationStepUiModel(
+    val instruction: String,
+    val distanceText: String,
+    val distanceMeters: Int,
+    val durationText: String,
+    val durationSeconds: Int,
+    val startLocation: MapLatLng,
+    val endLocation: MapLatLng,
+)
+
 const val BANGKOK_LATITUDE = 13.7563
 const val BANGKOK_LONGITUDE = 100.5018

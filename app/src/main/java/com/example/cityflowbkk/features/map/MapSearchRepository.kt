@@ -11,7 +11,7 @@ class MapSearchRepository(
 ) {
     suspend fun autocomplete(query: String): List<PlaceSuggestionUiModel> = withContext(Dispatchers.IO) {
         if (apiKey.isBlank()) {
-            error("Missing Google Places API key. Add MAPS_API_KEY to local.properties.")
+            error("Missing Google Places API key. Add GOOGLE_MAPS_API_KEY to local.properties.")
         }
         if (query.isBlank()) {
             return@withContext emptyList()
@@ -78,7 +78,7 @@ class MapSearchRepository(
 
     suspend fun fetchPlaceDetails(placeId: String): MapPlaceUiModel = withContext(Dispatchers.IO) {
         if (apiKey.isBlank()) {
-            error("Missing Google Places API key. Add MAPS_API_KEY to local.properties.")
+            error("Missing Google Places API key. Add GOOGLE_MAPS_API_KEY to local.properties.")
         }
 
         val response = URL("https://places.googleapis.com/v1/places/$placeId")

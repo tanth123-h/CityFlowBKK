@@ -12,6 +12,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.cityflowbkk.features.common.PlaceholderScreen
 import com.example.cityflowbkk.features.home.HomeScreen
+import com.example.cityflowbkk.features.route.RouteScreen
 import com.example.cityflowbkk.ui.icons.HomeIcon
 import com.example.cityflowbkk.ui.navigation.CityFlowBottomBar
 
@@ -43,10 +44,20 @@ fun MainScreen() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Home.route) {
-                HomeScreen()
+                HomeScreen(
+                    onPlanRouteClick = {
+                        navController.navigate(Screen.Route.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                )
             }
             composable(Screen.Route.route) {
-                PlaceholderScreen(title = "Routes", icon = HomeIcon.Route)
+                RouteScreen()
             }
             composable(Screen.Station.route) {
                 PlaceholderScreen(title = "Stations", icon = HomeIcon.Station)

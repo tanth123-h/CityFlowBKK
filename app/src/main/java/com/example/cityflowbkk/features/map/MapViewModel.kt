@@ -15,8 +15,8 @@ import kotlinx.coroutines.launch
 class MapViewModel(
     application: Application,
 ) : AndroidViewModel(application) {
-    private val searchRepository = MapSearchRepository(BuildConfig.MAPS_API_KEY)
-    private val directionsRepository = DirectionsRepository(BuildConfig.MAPS_API_KEY)
+    private val searchRepository = MapSearchRepository(BuildConfig.GOOGLE_MAPS_API_KEY)
+    private val directionsRepository = DirectionsRepository(BuildConfig.GOOGLE_MAPS_API_KEY)
     private val locationRepository = LocationRepository(application.applicationContext)
 
     private val _uiState = MutableStateFlow(MapUiState())

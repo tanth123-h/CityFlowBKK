@@ -3,6 +3,7 @@ package com.example.cityflowbkk.features.map
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import android.text.Html
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -15,7 +16,7 @@ class DirectionsRepository(
         destination: MapLatLng,
     ): RouteResult = withContext(Dispatchers.IO) {
         if (apiKey.isBlank()) {
-            error("Missing Google Maps API key. Add MAPS_API_KEY to local.properties.")
+            error("Missing Google Maps API key. Add GOOGLE_MAPS_API_KEY to local.properties.")
         }
 
         val originParam = "${origin.latitude},${origin.longitude}"
@@ -65,6 +66,7 @@ class DirectionsRepository(
             val distance = leg.getJSONObject("distance")
             val duration = leg.getJSONObject("duration")
             val encodedPolyline = route.getJSONObject("overview_polyline").getString("points")
+            val steps = leg.optJSONArray("steps")
 
             RouteResult(
                 route = RouteUiModel(
@@ -75,6 +77,37 @@ class DirectionsRepository(
                     arrivalTimeText = formatArrivalTime(duration.getInt("value")),
                 ),
                 points = PolylineDecoder.decode(encodedPolyline),
+                steps = buildList {
+                    if (steps == null) return@buildList
+
+                    for (index in 0 until steps.length()) {
+                        val step = steps.optJSONObject(index) ?: continue
+                        val stepDistance = step.optJSONObject("distance") ?: continue
+                        val stepDuration = step.optJSONObject("duration") ?: continue
+                        val startLocation = step.optJSONObject("start_location") ?: continue
+                        val endLocation = step.optJSONObject("end_location") ?: continue
+
+                        add(
+                            NavigationStepUiModel(
+                                instruction = step.optString("html_instructions")
+                                    .toPlainText()
+                                    .ifBlank { "Continue" },
+                                distanceText = stepDistance.optString("text"),
+                                distanceMeters = stepDistance.optInt("value"),
+                                durationText = stepDuration.optString("text"),
+                                durationSeconds = stepDuration.optInt("value"),
+                                startLocation = MapLatLng(
+                                    latitude = startLocation.getDouble("lat"),
+                                    longitude = startLocation.getDouble("lng"),
+                                ),
+                                endLocation = MapLatLng(
+                                    latitude = endLocation.getDouble("lat"),
+                                    longitude = endLocation.getDouble("lng"),
+                                ),
+                            ),
+                        )
+                    }
+                },
             )
         } finally {
             connection.disconnect()
@@ -88,9 +121,17 @@ class DirectionsRepository(
     }
 
     private fun String.urlEncode(): String = URLEncoder.encode(this, Charsets.UTF_8.name())
+
+    private fun String.toPlainText(): String {
+        return Html.fromHtml(this, Html.FROM_HTML_MODE_LEGACY)
+            .toString()
+            .replace(Regex("\\s+"), " ")
+            .trim()
+    }
 }
 
 data class RouteResult(
     val route: RouteUiModel,
     val points: List<MapLatLng>,
+    val steps: List<NavigationStepUiModel>,
 )
