@@ -590,9 +590,9 @@ private fun SectionHeader(
 }
 
 private val sampleQuickActions = listOf(
-    QuickActionUiModel("BTS Guide", HomeIcon.Train, CityFlowBlue),
     QuickActionUiModel("Plan Route", HomeIcon.Route, CityFlowGreen),
-    QuickActionUiModel("Ticket Guide", HomeIcon.Ticket, CityFlowOrange),
+    QuickActionUiModel("Tour", HomeIcon.Map, CityFlowBlue),
+    QuickActionUiModel("Tutorial", HomeIcon.School, CityFlowOrange),
 )
 
 private val samplePopularPlaces = listOf(
