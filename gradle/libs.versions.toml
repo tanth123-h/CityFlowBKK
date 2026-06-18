@@ -13,7 +13,7 @@ kotlinxCoroutines = "1.10.2"
 playServicesMaps = "19.2.0"
 playServicesLocation = "21.3.0"
 mapsCompose = "6.2.1"
-coilCompose = "2.6.0"
+coilCompose = "2.7.0"
 retrofit = "2.9.0"
 okhttp = "4.12.0"
 

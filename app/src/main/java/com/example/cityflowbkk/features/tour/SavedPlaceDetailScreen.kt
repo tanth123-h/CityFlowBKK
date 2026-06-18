@@ -1,7 +1,7 @@
 package com.example.cityflowbkk.features.tour
 
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.background
@@ -480,7 +480,7 @@ private fun ClickableDetailRow(icon: String, label: String, value: String, uri: 
         modifier = Modifier
             .clickable {
                 runCatching {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))
+                    context.startActivity(Intent(Intent.ACTION_VIEW, uri.toUri()))
                 }
             }
             .padding(vertical = 4.dp)
