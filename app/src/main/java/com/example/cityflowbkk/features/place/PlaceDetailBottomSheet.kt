@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -155,6 +156,13 @@ private fun PlaceDetailContent(
                 RemoteHeaderImage(
                     imageUrl = place.photoUrl,
                     contentDescription = place.name,
+                )
+            } else if (place.localImageRes != null) {
+                Image(
+                    painter = painterResource(place.localImageRes),
+                    contentDescription = place.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
                 )
             } else {
                 PlaceImageFallback()
