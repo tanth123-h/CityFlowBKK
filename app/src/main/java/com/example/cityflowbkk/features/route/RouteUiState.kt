@@ -2,10 +2,12 @@ package com.example.cityflowbkk.features.route
 
 import com.example.cityflowbkk.features.map.BANGKOK_LATITUDE
 import com.example.cityflowbkk.features.map.BANGKOK_LONGITUDE
+import com.example.cityflowbkk.features.map.DroppedPinUiModel
 import com.example.cityflowbkk.features.map.MapPlaceUiModel
 import com.example.cityflowbkk.features.map.MapLatLng
 import com.example.cityflowbkk.features.map.NavigationStepUiModel
 import com.example.cityflowbkk.features.map.PlaceSuggestionUiModel
+import com.example.cityflowbkk.features.map.RouteTransportType
 import com.example.cityflowbkk.features.map.RouteUiModel
 import androidx.compose.ui.graphics.Color
 
@@ -13,11 +15,18 @@ data class RouteUiState(
     val destination: String = "",
     val destinationSuggestions: List<PlaceSuggestionUiModel> = emptyList(),
     val selectedDestination: MapPlaceUiModel? = null,
+    val droppedPin: DroppedPinUiModel? = null,
     val isSearchingDestination: Boolean = false,
     val route: RouteUiModel? = null,
     val routeSegments: List<RouteSegmentUiModel> = emptyList(),
     val overviewPolyline: List<MapLatLng> = emptyList(),
     val navigationSteps: List<NavigationStepUiModel> = emptyList(),
+    val activeNavigationStepIndex: Int? = null,
+    val currentNavigationInstruction: String? = null,
+    val isNavigating: Boolean = false,
+    val isOffRoute: Boolean = false,
+    val arrivalAlertsEnabled: Boolean = ArrivalAlertSettingsRepository.DEFAULT_ENABLED,
+    val alertDistanceThresholdMeters: Int = ArrivalAlertSettingsRepository.DEFAULT_THRESHOLD_METERS,
     val transitDetails: TransitRouteDetailsUiModel? = null,
     val routeDetailsId: String? = null,
     val isCalculatingRoute: Boolean = false,
@@ -49,9 +58,12 @@ data class RouteUiState(
 )
 
 data class RouteSegmentUiModel(
+    val index: Int,
     val points: List<MapLatLng>,
     val color: Color,
     val segmentType: RouteSegmentType,
+    val transportType: RouteTransportType,
+    val instruction: String,
 )
 
 enum class RouteSegmentType {
@@ -67,7 +79,13 @@ data class TransitRouteDetailsUiModel(
     val stationCount: Int,
     val durationText: String,
     val distanceText: String,
-    val fareText: String,
+    val btsFareText: String,
+    val mrtFareText: String,
+    val totalTransitFareText: String,
+    val btsOriginStation: String? = null,
+    val btsDestinationStation: String? = null,
+    val mrtOriginStation: String? = null,
+    val mrtDestinationStation: String? = null,
 )
 
 data class RouteMapMarkerUiModel(

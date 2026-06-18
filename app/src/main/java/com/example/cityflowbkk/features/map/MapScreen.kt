@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -14,9 +15,11 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -101,14 +104,29 @@ fun MapScreen(
                 compassEnabled = true,
             ),
             onMapLoaded = { viewModel.onMapReady() },
+            onMapClick = { latLng ->
+                viewModel.onMapClick(MapLatLng(latLng.latitude, latLng.longitude))
+            },
         ) {
-            uiState.selectedPlace?.let { place ->
+            if (uiState.droppedPin == null) {
+                uiState.selectedPlace?.let { place ->
+                    Marker(
+                        state = MarkerState(
+                            position = LatLng(place.latitude, place.longitude),
+                        ),
+                        title = place.name,
+                        snippet = place.address,
+                    )
+                }
+            }
+
+            uiState.droppedPin?.let { pin ->
                 Marker(
                     state = MarkerState(
-                        position = LatLng(place.latitude, place.longitude),
+                        position = LatLng(pin.latitude, pin.longitude),
                     ),
-                    title = place.name,
-                    snippet = place.address,
+                    title = pin.placeName,
+                    snippet = pin.address,
                 )
             }
 
@@ -244,7 +262,19 @@ fun MapScreen(
             )
         }
 
-        uiState.selectedPlace?.let { place ->
+        uiState.droppedPin?.let { pin ->
+            DroppedPinCard(
+                pin = pin,
+                route = uiState.route,
+                isLoadingRoute = uiState.isLoadingRoute,
+                onSetAsDestination = viewModel::setDroppedPinAsDestination,
+                onNavigateHere = viewModel::navigateToDroppedPin,
+                onCalculateRoute = viewModel::calculateRouteToDroppedPin,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+            )
+        } ?: uiState.selectedPlace?.let { place ->
             RouteInfoCard(
                 place = place,
                 route = uiState.route,
@@ -253,6 +283,101 @@ fun MapScreen(
                     .align(Alignment.BottomCenter)
                     .padding(horizontal = 16.dp, vertical = 16.dp),
             )
+        }
+    }
+}
+
+@Composable
+private fun DroppedPinCard(
+    pin: DroppedPinUiModel,
+    route: RouteUiModel?,
+    isLoadingRoute: Boolean,
+    onSetAsDestination: () -> Unit,
+    onNavigateHere: () -> Unit,
+    onCalculateRoute: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        tonalElevation = 4.dp,
+        shadowElevation = 4.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = pin.placeName,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "%.6f, %.6f".format(pin.latitude, pin.longitude),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold,
+            )
+            if (pin.isLoadingDetails) {
+                CircularProgressIndicator(modifier = Modifier.padding(top = 4.dp))
+            } else {
+                pin.address?.let { address ->
+                    Text(
+                        text = address,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+
+            when {
+                isLoadingRoute -> CircularProgressIndicator(modifier = Modifier.padding(top = 4.dp))
+                route != null -> {
+                    Text(
+                        text = "${route.distanceText} · ${route.durationText}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = "Arrive around ${route.arrivalTimeText}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(
+                    onClick = onSetAsDestination,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(14.dp),
+                ) {
+                    Text("Set as Destination")
+                }
+                Button(
+                    onClick = onNavigateHere,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(14.dp),
+                ) {
+                    Text("Navigate Here")
+                }
+            }
+
+            OutlinedButton(
+                onClick = onCalculateRoute,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+            ) {
+                Text("Calculate Route")
+            }
         }
     }
 }

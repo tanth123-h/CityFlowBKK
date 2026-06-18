@@ -1,0 +1,3 @@
+route_id,line_id,route_name,direction,source_file
+MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE,MRT_PINK,Pink Line reference order from fare table,reference,gemini-code-1781773096961.md
+MRT_YELLOW_REFERENCE,MRT_YELLOW,Yellow Line reference order from fare table,reference,gemini-code-1781773096961.md

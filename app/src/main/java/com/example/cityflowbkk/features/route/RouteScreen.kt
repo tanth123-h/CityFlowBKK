@@ -1,6 +1,8 @@
 package com.example.cityflowbkk.features.route
 
 import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -28,8 +30,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberBottomSheetScaffoldState
@@ -43,14 +48,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.cityflowbkk.features.map.DroppedPinUiModel
+import com.example.cityflowbkk.features.map.MapLatLng
 import com.example.cityflowbkk.features.map.NavigationStepUiModel
 import com.example.cityflowbkk.features.map.PlaceSuggestionUiModel
+import com.example.cityflowbkk.features.map.RouteTransportType
 import com.example.cityflowbkk.ui.icons.HomeIcon
 import com.example.cityflowbkk.ui.icons.HomeIconGraphic
 import com.example.cityflowbkk.ui.theme.CityFlowBKKTheme
@@ -65,6 +75,7 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
+import kotlin.math.roundToInt
 
 @Composable
 fun RouteScreen(
@@ -72,12 +83,30 @@ fun RouteScreen(
     onNavigateToDetails: (routeDetailsId: String) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
     var hasRequestedPermission by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
     ) {
         viewModel.refreshLocationPermissionState()
+    }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) {
+    }
+
+    LaunchedEffect(uiState.arrivalAlertsEnabled) {
+        if (
+            uiState.arrivalAlertsEnabled &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     RouteContent(
@@ -99,8 +128,14 @@ fun RouteScreen(
         },
         onDismissLocationMessage = viewModel::dismissLocationMessage,
         onDestinationSelected = viewModel::onDestinationSelected,
+        onMapClick = viewModel::onMapClick,
+        onSetPinAsDestination = viewModel::setDroppedPinAsDestination,
+        onNavigateToPin = viewModel::navigateToDroppedPin,
+        onCalculateRouteToPin = viewModel::calculateRouteToDroppedPin,
         onDismissSearchMessage = viewModel::dismissSearchMessage,
         onDismissRouteMessage = viewModel::dismissRouteMessage,
+        onArrivalAlertsEnabledChange = viewModel::onArrivalAlertsEnabledChange,
+        onAlertDistanceThresholdChange = viewModel::onAlertDistanceThresholdChange,
         onNavigateToDetails = onNavigateToDetails,
     )
 }
@@ -114,8 +149,14 @@ private fun RouteContent(
     onRecenterMap: () -> Unit,
     onDismissLocationMessage: () -> Unit,
     onDestinationSelected: (PlaceSuggestionUiModel) -> Unit,
+    onMapClick: (MapLatLng) -> Unit,
+    onSetPinAsDestination: () -> Unit,
+    onNavigateToPin: () -> Unit,
+    onCalculateRouteToPin: () -> Unit,
     onDismissSearchMessage: () -> Unit,
     onDismissRouteMessage: () -> Unit,
+    onArrivalAlertsEnabledChange: (Boolean) -> Unit,
+    onAlertDistanceThresholdChange: (Int) -> Unit,
     onNavigateToDetails: (routeDetailsId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -133,7 +174,12 @@ private fun RouteContent(
                 onDismissLocationMessage = onDismissLocationMessage,
                 onDismissSearchMessage = onDismissSearchMessage,
                 onDismissRouteMessage = onDismissRouteMessage,
+                onSetPinAsDestination = onSetPinAsDestination,
+                onNavigateToPin = onNavigateToPin,
+                onCalculateRouteToPin = onCalculateRouteToPin,
                 onNavigateToDetails = onNavigateToDetails,
+                onArrivalAlertsEnabledChange = onArrivalAlertsEnabledChange,
+                onAlertDistanceThresholdChange = onAlertDistanceThresholdChange,
             )
         },
         containerColor = Color.Transparent,
@@ -143,6 +189,7 @@ private fun RouteContent(
                 uiState = uiState,
                 onMapLoaded = onMapLoaded,
                 onRecenterMap = onRecenterMap,
+                onMapClick = onMapClick,
                 modifier = Modifier.fillMaxSize(),
             )
 
@@ -156,6 +203,7 @@ private fun RouteContent(
                     .statusBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             )
+
         }
     }
 }
@@ -166,7 +214,12 @@ private fun RouteBottomSheetContent(
     onDismissLocationMessage: () -> Unit,
     onDismissSearchMessage: () -> Unit,
     onDismissRouteMessage: () -> Unit,
+    onSetPinAsDestination: () -> Unit,
+    onNavigateToPin: () -> Unit,
+    onCalculateRouteToPin: () -> Unit,
     onNavigateToDetails: (routeDetailsId: String) -> Unit,
+    onArrivalAlertsEnabledChange: (Boolean) -> Unit,
+    onAlertDistanceThresholdChange: (Int) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -182,6 +235,13 @@ private fun RouteBottomSheetContent(
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
+        )
+
+        ArrivalAlertSettingsCard(
+            enabled = uiState.arrivalAlertsEnabled,
+            thresholdMeters = uiState.alertDistanceThresholdMeters,
+            onEnabledChange = onArrivalAlertsEnabledChange,
+            onThresholdChange = onAlertDistanceThresholdChange,
         )
 
         uiState.locationMessage?.let { message ->
@@ -206,10 +266,27 @@ private fun RouteBottomSheetContent(
             )
         }
 
+        uiState.droppedPin?.let { pin ->
+            DroppedPinRouteCard(
+                pin = pin,
+                isCalculatingRoute = uiState.isCalculatingRoute,
+                onSetAsDestination = onSetPinAsDestination,
+                onNavigateHere = onNavigateToPin,
+                onCalculateRoute = onCalculateRouteToPin,
+            )
+        }
+
         if (uiState.isCalculatingRoute || uiState.route != null) {
             RouteSummaryCard(
                 uiState = uiState,
                 isCalculatingRoute = uiState.isCalculatingRoute,
+            )
+        }
+
+        uiState.currentNavigationInstruction?.let { instruction ->
+            ActiveNavigationCard(
+                instruction = instruction,
+                isOffRoute = uiState.isOffRoute,
             )
         }
 
@@ -252,7 +329,76 @@ private fun RouteBottomSheetContent(
         }
 
         if (uiState.navigationSteps.isNotEmpty()) {
-            NavigationStepsSection(steps = uiState.navigationSteps)
+            NavigationStepsSection(
+                steps = uiState.navigationSteps,
+                activeStepIndex = uiState.activeNavigationStepIndex,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ArrivalAlertSettingsCard(
+    enabled: Boolean,
+    thresholdMeters: Int,
+    onEnabledChange: (Boolean) -> Unit,
+    onThresholdChange: (Int) -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = "Arrival alerts",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = "BTS, MRT, and Airport Rail Link",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = enabled,
+                    onCheckedChange = onEnabledChange,
+                )
+            }
+
+            Text(
+                text = "Alert distance: $thresholdMeters m",
+                style = MaterialTheme.typography.labelLarge,
+                color = if (enabled) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                fontWeight = FontWeight.SemiBold,
+            )
+            Slider(
+                value = thresholdMeters.toFloat(),
+                onValueChange = { value ->
+                    onThresholdChange((value / 50f).roundToInt() * 50)
+                },
+                valueRange = ArrivalAlertSettingsRepository.MIN_THRESHOLD_METERS.toFloat()..
+                    ArrivalAlertSettingsRepository.MAX_THRESHOLD_METERS.toFloat(),
+                enabled = enabled,
+            )
         }
     }
 }
@@ -367,6 +513,7 @@ private fun RouteMap(
     uiState: RouteUiState,
     onMapLoaded: () -> Unit,
     onRecenterMap: () -> Unit,
+    onMapClick: (MapLatLng) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val cameraTarget = LatLng(uiState.cameraTargetLatitude, uiState.cameraTargetLongitude)
@@ -398,6 +545,14 @@ private fun RouteMap(
                 mapToolbarEnabled = true,
             ),
             onMapLoaded = onMapLoaded,
+            onMapClick = { latLng ->
+                onMapClick(
+                    MapLatLng(
+                        latitude = latLng.latitude,
+                        longitude = latLng.longitude,
+                    ),
+                )
+            },
         ) {
             uiState.markers.forEach { marker ->
                 Marker(
@@ -423,27 +578,35 @@ private fun RouteMap(
             }
 
             uiState.selectedDestination?.let { destination ->
+                if (uiState.droppedPin == null) {
+                    Marker(
+                        state = MarkerState(
+                            position = LatLng(destination.latitude, destination.longitude),
+                        ),
+                        title = destination.name,
+                        snippet = destination.address,
+                    )
+                }
+            }
+
+            uiState.droppedPin?.let { pin ->
                 Marker(
-                    state = MarkerState(
-                        position = LatLng(destination.latitude, destination.longitude),
-                    ),
-                    title = destination.name,
-                    snippet = destination.address,
+                    state = MarkerState(position = LatLng(pin.latitude, pin.longitude)),
+                    title = pin.placeName,
+                    snippet = pin.address,
                 )
             }
 
             // Render route polylines
             if (uiState.routeSegments.isNotEmpty()) {
-                // Use segments for multi-colored rendering (walking = blue, transit = green)
                 uiState.routeSegments.forEach { segment ->
                     Polyline(
                         points = segment.points.map { LatLng(it.latitude, it.longitude) },
                         color = segment.color,
-                        width = 10f,
+                        width = if (segment.index == uiState.activeNavigationStepIndex) 14f else 9f,
                     )
                 }
             } else if (uiState.overviewPolyline.isNotEmpty()) {
-                // Fallback: use overview polyline if segments are empty
                 Polyline(
                     points = uiState.overviewPolyline.map { LatLng(it.latitude, it.longitude) },
                     color = Color.Blue,
@@ -511,6 +674,48 @@ private fun RouteSummaryCard(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ActiveNavigationCard(
+    instruction: String,
+    isOffRoute: Boolean,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = if (isOffRoute) {
+            MaterialTheme.colorScheme.errorContainer
+        } else {
+            MaterialTheme.colorScheme.primaryContainer
+        },
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = if (isOffRoute) "Recalculating route" else "Current step",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = if (isOffRoute) {
+                    MaterialTheme.colorScheme.onErrorContainer
+                } else {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                },
+            )
+            Text(
+                text = instruction,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = if (isOffRoute) {
+                    MaterialTheme.colorScheme.onErrorContainer
+                } else {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                },
+            )
         }
     }
 }
@@ -599,6 +804,7 @@ private fun RecommendationBadge(text: String) {
 @Composable
 private fun NavigationStepsSection(
     steps: List<NavigationStepUiModel>,
+    activeStepIndex: Int?,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -616,20 +822,83 @@ private fun NavigationStepsSection(
                 fontWeight = FontWeight.Bold,
             )
             steps.forEachIndexed { index, step ->
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                val isActive = step.index == activeStepIndex
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (isActive) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        Color.Transparent
+                    },
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
                     Text(
-                        text = "${index + 1}. ${step.instruction}",
+                        text = "${index + 1}. ${step.transportType.routeLabel()}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (isActive) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = step.instruction,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
+                        color = if (isActive) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
                     )
                     Text(
                         text = "${step.distanceText} - ${step.durationText}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (isActive) {
+                            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.78f)
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                     )
+                    step.transitDetails?.let { transit ->
+                        Text(
+                            text = listOf(
+                                transit.departureStop.takeIf { it.isNotBlank() },
+                                transit.arrivalStop.takeIf { it.isNotBlank() },
+                            ).joinToString(" to "),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (isActive) {
+                                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.78f)
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    }
                 }
             }
         }
+    }
+}
+
+private fun RouteTransportType.routeLabel(): String {
+    return when (this) {
+        RouteTransportType.WALKING -> "Walking"
+        RouteTransportType.DRIVING -> "Driving"
+        RouteTransportType.BUS -> "Bus"
+        RouteTransportType.BTS_SUKHUMVIT -> "BTS Sukhumvit Line"
+        RouteTransportType.BTS_SILOM -> "BTS Silom Line"
+        RouteTransportType.MRT_BLUE -> "MRT Blue Line"
+        RouteTransportType.MRT_PURPLE -> "MRT Purple Line"
+        RouteTransportType.AIRPORT_RAIL_LINK -> "Airport Rail Link"
+        RouteTransportType.UNKNOWN_TRANSIT -> "Transit"
     }
 }
 
@@ -768,7 +1037,21 @@ private fun TransitRouteDetailsCard(
                 RouteMetricRow(label = "Number of stations", value = details.stationCount.toString())
                 RouteMetricRow(label = "Travel duration", value = details.durationText)
                 RouteMetricRow(label = "Distance", value = details.distanceText)
-                RouteMetricRow(label = "Estimated BTS fare", value = details.fareText)
+                details.btsOriginStation?.let {
+                    RouteMetricRow(label = "BTS origin", value = it)
+                }
+                details.btsDestinationStation?.let {
+                    RouteMetricRow(label = "BTS destination", value = it)
+                }
+                details.mrtOriginStation?.let {
+                    RouteMetricRow(label = "MRT origin", value = it)
+                }
+                details.mrtDestinationStation?.let {
+                    RouteMetricRow(label = "MRT destination", value = it)
+                }
+                RouteMetricRow(label = "BTS fare", value = details.btsFareText)
+                RouteMetricRow(label = "MRT fare", value = details.mrtFareText)
+                RouteMetricRow(label = "Total transit fare", value = details.totalTransitFareText)
             }
         }
     }
@@ -799,6 +1082,88 @@ private fun RouteMetricRow(
         )
     }
 }
+
+@Composable
+private fun DroppedPinRouteCard(
+    pin: DroppedPinUiModel,
+    isCalculatingRoute: Boolean,
+    onSetAsDestination: () -> Unit,
+    onNavigateHere: () -> Unit,
+    onCalculateRoute: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        tonalElevation = 4.dp,
+        shadowElevation = 4.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = pin.placeName,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "%.6f, %.6f".format(pin.latitude, pin.longitude),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold,
+            )
+            if (pin.isLoadingDetails) {
+                CircularProgressIndicator(modifier = Modifier.padding(top = 4.dp))
+            } else {
+                pin.address?.let { address ->
+                    Text(
+                        text = address,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+
+            if (isCalculatingRoute) {
+                CircularProgressIndicator(modifier = Modifier.padding(top = 4.dp))
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(
+                    onClick = onSetAsDestination,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(14.dp),
+                ) {
+                    Text("Set as Destination")
+                }
+                Button(
+                    onClick = onNavigateHere,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(14.dp),
+                ) {
+                    Text("Navigate Here")
+                }
+            }
+
+            OutlinedButton(
+                onClick = onCalculateRoute,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+            ) {
+                Text("Calculate Route")
+            }
+        }
+    }
+}
+
 @Preview(showBackground = true, widthDp = 390, heightDp = 900)
 @Composable
 private fun RouteScreenPreview() {
@@ -810,8 +1175,14 @@ private fun RouteScreenPreview() {
             onRecenterMap = {},
             onDismissLocationMessage = {},
             onDestinationSelected = {},
+            onMapClick = {},
+            onSetPinAsDestination = {},
+            onNavigateToPin = {},
+            onCalculateRouteToPin = {},
             onDismissSearchMessage = {},
             onDismissRouteMessage = {},
+            onArrivalAlertsEnabledChange = {},
+            onAlertDistanceThresholdChange = {},
             onNavigateToDetails = {},
         )
     }

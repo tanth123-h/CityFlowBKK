@@ -8,14 +8,17 @@ import com.example.cityflowbkk.BuildConfig
 import com.example.cityflowbkk.features.map.BANGKOK_LATITUDE
 import com.example.cityflowbkk.features.map.BANGKOK_LONGITUDE
 import com.example.cityflowbkk.features.map.DirectionsRepository
+import com.example.cityflowbkk.features.map.DroppedPinUiModel
 import com.example.cityflowbkk.features.map.LocationRepository
 import com.example.cityflowbkk.features.map.MapLatLng
 import com.example.cityflowbkk.features.map.MapSearchRepository
 import com.example.cityflowbkk.features.map.PlaceSuggestionUiModel
 import com.example.cityflowbkk.features.map.RouteResult
+import com.example.cityflowbkk.features.map.RouteTransportType
 import com.example.cityflowbkk.features.map.TravelMode as GoogleTravelMode
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,15 +28,27 @@ import kotlinx.coroutines.launch
 class RouteViewModel(
     application: Application,
 ) : AndroidViewModel(application) {
+    private val appContext = application.applicationContext
     private val locationRepository = LocationRepository(application.applicationContext)
     private val searchRepository = MapSearchRepository(BuildConfig.GOOGLE_MAPS_API_KEY)
     private val directionsRepository = DirectionsRepository(BuildConfig.GOOGLE_MAPS_API_KEY)
+    private val arrivalAlertSettingsRepository = ArrivalAlertSettingsRepository(appContext)
+    private val transitArrivalAlertTracker = TransitArrivalAlertTracker()
+    private val transitArrivalNotifier = TransitArrivalNotifier(appContext)
 
-    private val _uiState = MutableStateFlow(RouteUiState())
+    private val _uiState = MutableStateFlow(
+        RouteUiState(
+            arrivalAlertsEnabled = arrivalAlertSettingsRepository.isEnabled(),
+            alertDistanceThresholdMeters = arrivalAlertSettingsRepository.thresholdMeters(),
+        ),
+    )
     val uiState: StateFlow<RouteUiState> = _uiState.asStateFlow()
 
     private var destinationSearchJob: Job? = null
     private var routeJob: Job? = null
+    private var droppedPinJob: Job? = null
+    private var locationTrackingJob: Job? = null
+    private var lastDeviationRecalculationMillis: Long = 0L
 
     init {
         refreshLocationPermissionState()
@@ -44,10 +59,15 @@ class RouteViewModel(
             it.copy(
                 destination = destination,
                 selectedDestination = null,
+                droppedPin = null,
                 route = null,
                 routeSegments = emptyList(),
                 overviewPolyline = emptyList(),
                 navigationSteps = emptyList(),
+                activeNavigationStepIndex = null,
+                currentNavigationInstruction = null,
+                isNavigating = false,
+                isOffRoute = false,
                 transitDetails = null,
                 routeDetailsId = null,
                 travelRecommendations = emptyList(),
@@ -59,6 +79,7 @@ class RouteViewModel(
                 searchMessage = null,
             )
         }
+        transitArrivalAlertTracker.reset()
         destinationSearchJob?.cancel()
 
         if (destination.isBlank()) {
@@ -113,6 +134,7 @@ class RouteViewModel(
                 _uiState.update {
                     it.copy(
                         selectedDestination = destination,
+                        droppedPin = null,
                         destination = destination.name,
                         cameraTargetLatitude = destination.latitude,
                         cameraTargetLongitude = destination.longitude,
@@ -204,6 +226,86 @@ class RouteViewModel(
         loadCurrentLocation(moveCamera = true)
     }
 
+    fun onMapClick(location: MapLatLng) {
+        droppedPinJob?.cancel()
+        routeJob?.cancel()
+        _uiState.update {
+            it.copy(
+                droppedPin = DroppedPinUiModel(
+                    latitude = location.latitude,
+                    longitude = location.longitude,
+                    placeName = "Dropped pin",
+                    address = null,
+                    isLoadingDetails = true,
+                ),
+                selectedDestination = null,
+                destination = "Dropped pin",
+                destinationSuggestions = emptyList(),
+                route = null,
+                routeSegments = emptyList(),
+                overviewPolyline = emptyList(),
+                navigationSteps = emptyList(),
+                activeNavigationStepIndex = null,
+                currentNavigationInstruction = null,
+                isNavigating = false,
+                isOffRoute = false,
+                transitDetails = null,
+                routeDetailsId = null,
+                routeResult = "Tap Set as Destination to route to this pin.",
+                routeMessage = null,
+                searchMessage = null,
+            )
+        }
+        transitArrivalAlertTracker.reset()
+
+        droppedPinJob = viewModelScope.launch {
+            try {
+                val place = searchRepository.reverseGeocode(location)
+                _uiState.update {
+                    it.copy(
+                        droppedPin = DroppedPinUiModel(
+                            latitude = place.latitude,
+                            longitude = place.longitude,
+                            placeName = place.name,
+                            address = place.address,
+                            isLoadingDetails = false,
+                        ),
+                        destination = place.name,
+                    )
+                }
+            } catch (exception: Exception) {
+                _uiState.update {
+                    it.copy(
+                        droppedPin = it.droppedPin?.copy(isLoadingDetails = false),
+                        routeMessage = exception.message ?: "Could not load this location address.",
+                    )
+                }
+            }
+        }
+    }
+
+    fun setDroppedPinAsDestination() {
+        val droppedPin = _uiState.value.droppedPin ?: return
+        _uiState.update {
+            it.copy(
+                selectedDestination = droppedPin.toPlace(),
+                destination = droppedPin.placeName,
+                routeResult = droppedPin.toPlace().toDestinationResultText(),
+                routeMessage = null,
+                searchMessage = null,
+            )
+        }
+        calculateRouteIfPossible()
+    }
+
+    fun navigateToDroppedPin() {
+        setDroppedPinAsDestination()
+    }
+
+    fun calculateRouteToDroppedPin() {
+        setDroppedPinAsDestination()
+    }
+
     fun recenterCamera() {
         _uiState.update {
             it.copy(
@@ -226,6 +328,23 @@ class RouteViewModel(
         _uiState.update { it.copy(routeMessage = null) }
     }
 
+    fun onArrivalAlertsEnabledChange(enabled: Boolean) {
+        arrivalAlertSettingsRepository.setEnabled(enabled)
+        if (!enabled) {
+            transitArrivalAlertTracker.reset()
+        }
+        _uiState.update { it.copy(arrivalAlertsEnabled = enabled) }
+    }
+
+    fun onAlertDistanceThresholdChange(thresholdMeters: Int) {
+        val coercedThreshold = thresholdMeters.coerceIn(
+            ArrivalAlertSettingsRepository.MIN_THRESHOLD_METERS,
+            ArrivalAlertSettingsRepository.MAX_THRESHOLD_METERS,
+        )
+        arrivalAlertSettingsRepository.setThresholdMeters(coercedThreshold)
+        _uiState.update { it.copy(alertDistanceThresholdMeters = coercedThreshold) }
+    }
+
     private fun calculateRouteIfPossible() {
         val state = _uiState.value
         val destination = state.selectedDestination ?: return
@@ -241,6 +360,10 @@ class RouteViewModel(
                         routeSegments = emptyList(),
                         overviewPolyline = emptyList(),
                         navigationSteps = emptyList(),
+                        activeNavigationStepIndex = null,
+                        currentNavigationInstruction = null,
+                        isNavigating = false,
+                        isOffRoute = false,
                         transitDetails = null,
                         routeDetailsId = null,
                         isCalculatingRoute = false,
@@ -275,13 +398,12 @@ class RouteViewModel(
                         GoogleTravelMode.DRIVING -> RouteSegmentType.Other
                     }
                     RouteSegmentUiModel(
+                        index = segment.index,
                         points = segment.points,
-                        color = when (segmentType) {
-                            RouteSegmentType.Walking -> Color.Blue
-                            RouteSegmentType.Transit -> Color.Green
-                            RouteSegmentType.Other -> Color.Gray
-                        },
+                        color = segment.transportType.routeColor(),
                         segmentType = segmentType,
+                        transportType = segment.transportType,
+                        instruction = segment.instruction,
                     )
                 }
 
@@ -290,6 +412,7 @@ class RouteViewModel(
                 }
                 val firstTransit = transitSegments.firstOrNull()
                 val lastTransit = transitSegments.lastOrNull()
+                val fareSummary = FareRepository.calculateFareSummary(transitRoute.segments)
                 val transitDetails = if (firstTransit != null && lastTransit != null) {
                     TransitRouteDetailsUiModel(
                         lineName = transitSegments.joinToString(" / ") {
@@ -304,7 +427,13 @@ class RouteViewModel(
                             .toDurationText()
                             .ifBlank { transitRoute.route.durationText },
                         distanceText = transitSegments.sumOf { it.distanceMeters }.toDistanceText(),
-                        fareText = transitRoute.fareText ?: "Estimated fare unavailable",
+                        btsFareText = fareSummary.btsFareBaht.toFareAmountText(),
+                        mrtFareText = fareSummary.mrtFareBaht.toFareAmountText(),
+                        totalTransitFareText = fareSummary.totalFareBaht.toFareAmountText(),
+                        btsOriginStation = fareSummary.btsOriginStation,
+                        btsDestinationStation = fareSummary.btsDestinationStation,
+                        mrtOriginStation = fareSummary.mrtOriginStation,
+                        mrtDestinationStation = fareSummary.mrtDestinationStation,
                     )
                 } else {
                     null
@@ -323,6 +452,10 @@ class RouteViewModel(
                         routeSegments = uiSegments,
                         overviewPolyline = transitRoute.points,
                         navigationSteps = transitRoute.steps,
+                        activeNavigationStepIndex = transitRoute.steps.firstOrNull()?.index,
+                        currentNavigationInstruction = transitRoute.steps.firstOrNull()?.instruction,
+                        isNavigating = transitRoute.steps.isNotEmpty(),
+                        isOffRoute = false,
                         transitDetails = transitDetails,
                         routeDetailsId = routeDetailsId,
                         isCalculatingRoute = false,
@@ -330,6 +463,8 @@ class RouteViewModel(
                         routeMessage = null,
                     )
                 }
+                transitArrivalAlertTracker.reset()
+                startLocationTracking()
             } catch (exception: Exception) {
                 _uiState.update {
                     it.copy(
@@ -337,6 +472,10 @@ class RouteViewModel(
                         routeSegments = emptyList(),
                         overviewPolyline = emptyList(),
                         navigationSteps = emptyList(),
+                        activeNavigationStepIndex = null,
+                        currentNavigationInstruction = null,
+                        isNavigating = false,
+                        isOffRoute = false,
                         transitDetails = null,
                         routeDetailsId = null,
                         isCalculatingRoute = false,
@@ -347,10 +486,116 @@ class RouteViewModel(
         }
     }
 
+    private fun startLocationTracking() {
+        if (locationTrackingJob?.isActive == true || !locationRepository.hasLocationPermission()) return
+
+        locationTrackingJob = viewModelScope.launch {
+            locationRepository.locationUpdates()
+                .catch { exception ->
+                    _uiState.update {
+                        it.copy(
+                            locationMessage = exception.message ?: "Live location updates stopped.",
+                            isNavigating = false,
+                        )
+                    }
+                }
+                .collect { location ->
+                    onNavigationLocation(location)
+                }
+        }
+    }
+
+    private fun onNavigationLocation(location: MapLatLng) {
+        val state = _uiState.value
+        val steps = state.navigationSteps
+        if (steps.isEmpty()) {
+            _uiState.update {
+                it.copy(
+                    currentLocationLatitude = location.latitude,
+                    currentLocationLongitude = location.longitude,
+                )
+            }
+            return
+        }
+
+        val activeStepIndex = NavigationTracker.activeStepIndex(
+            location = location,
+            steps = steps,
+            previousIndex = state.activeNavigationStepIndex,
+        )
+        val isOffRoute = NavigationTracker.isOffRoute(location, steps)
+        val activeStep = steps.firstOrNull { it.index == activeStepIndex }
+
+        _uiState.update {
+            it.copy(
+                currentLocationLatitude = location.latitude,
+                currentLocationLongitude = location.longitude,
+                activeNavigationStepIndex = activeStepIndex,
+                currentNavigationInstruction = activeStep?.instruction,
+                isNavigating = true,
+                isOffRoute = isOffRoute,
+                routeMessage = if (isOffRoute) {
+                    "You appear to be off route. Recalculating from your current location..."
+                } else if (it.routeMessage?.startsWith("You appear") == true) {
+                    null
+                } else {
+                    it.routeMessage
+                },
+            )
+        }
+
+        if (isOffRoute) {
+            recalculateAfterDeviation(location)
+        } else {
+            maybeShowTransitArrivalAlert(location, activeStepIndex)
+        }
+    }
+
+    private fun maybeShowTransitArrivalAlert(
+        location: MapLatLng,
+        activeStepIndex: Int?,
+    ) {
+        val state = _uiState.value
+        if (!state.arrivalAlertsEnabled) return
+
+        val alert = transitArrivalAlertTracker.arrivalAlert(
+            location = location,
+            steps = state.navigationSteps,
+            activeStepIndex = activeStepIndex,
+            thresholdMeters = state.alertDistanceThresholdMeters,
+        ) ?: return
+
+        transitArrivalNotifier.showArrivalAlert(alert.stationName)
+    }
+
+    private fun recalculateAfterDeviation(location: MapLatLng) {
+        val now = System.currentTimeMillis()
+        if (now - lastDeviationRecalculationMillis < DEVIATION_RECALCULATION_THROTTLE_MS) return
+        lastDeviationRecalculationMillis = now
+
+        _uiState.update {
+            it.copy(
+                currentLocationLatitude = location.latitude,
+                currentLocationLongitude = location.longitude,
+            )
+        }
+        calculateRouteIfPossible()
+    }
+
     private fun RouteUiState.currentLocation(): MapLatLng? {
         val latitude = currentLocationLatitude ?: return null
         val longitude = currentLocationLongitude ?: return null
         return MapLatLng(latitude, longitude)
+    }
+
+    private fun DroppedPinUiModel.toPlace(): com.example.cityflowbkk.features.map.MapPlaceUiModel {
+        return com.example.cityflowbkk.features.map.MapPlaceUiModel(
+            placeId = "dropped:$latitude,$longitude",
+            name = placeName,
+            address = address,
+            latitude = latitude,
+            longitude = longitude,
+        )
     }
 
     private fun RouteResult.toRouteResultText(
@@ -364,8 +609,30 @@ class RouteViewModel(
                 append("\n")
                 append("${it.departureStation} to ${it.arrivalStation}")
                 append("\n")
-                append("${it.stationCount} stations - Fare: ${it.fareText}")
+                append("${it.stationCount} stations - Total fare: ${it.totalTransitFareText}")
             }
+        }
+    }
+
+    private fun Int?.toFareText(): String {
+        return this?.let { "฿$it" } ?: "Unavailable"
+    }
+
+    private fun Int?.toFareAmountText(): String {
+        return this?.let { "฿$it" } ?: "Unavailable"
+    }
+
+    private fun RouteTransportType.routeColor(): Color {
+        return when (this) {
+            RouteTransportType.WALKING -> Color(0xFF1A73E8)
+            RouteTransportType.BTS_SUKHUMVIT -> Color(0xFF8BC34A)
+            RouteTransportType.BTS_SILOM -> Color(0xFF0B7D3B)
+            RouteTransportType.MRT_BLUE -> Color(0xFF1565C0)
+            RouteTransportType.MRT_PURPLE -> Color(0xFF7E57C2)
+            RouteTransportType.AIRPORT_RAIL_LINK -> Color(0xFFD32F2F)
+            RouteTransportType.BUS -> Color(0xFFFF9800)
+            RouteTransportType.DRIVING -> Color(0xFF757575)
+            RouteTransportType.UNKNOWN_TRANSIT -> Color(0xFF34A853)
         }
     }
 
@@ -401,5 +668,6 @@ class RouteViewModel(
 
     companion object {
         private const val SEARCH_DEBOUNCE_MS = 300L
+        private const val DEVIATION_RECALCULATION_THROTTLE_MS = 30_000L
     }
 }

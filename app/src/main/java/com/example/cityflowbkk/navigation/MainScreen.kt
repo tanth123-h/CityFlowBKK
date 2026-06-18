@@ -3,6 +3,7 @@ package com.example.cityflowbkk.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -22,10 +23,24 @@ import com.example.cityflowbkk.ui.icons.HomeIcon
 import com.example.cityflowbkk.ui.navigation.CityFlowBottomBar
 
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    requestedStartRoute: String? = null,
+    routeRequestVersion: Int = 0,
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
+    LaunchedEffect(routeRequestVersion, requestedStartRoute) {
+        val route = requestedStartRoute ?: return@LaunchedEffect
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
 
     Scaffold(
         bottomBar = {
