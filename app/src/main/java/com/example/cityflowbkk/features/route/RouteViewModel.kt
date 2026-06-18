@@ -68,6 +68,7 @@ class RouteViewModel(
                 currentNavigationInstruction = null,
                 isNavigating = false,
                 isOffRoute = false,
+                arrivalAlertStationName = null,
                 transitDetails = null,
                 routeDetailsId = null,
                 travelRecommendations = emptyList(),
@@ -249,6 +250,7 @@ class RouteViewModel(
                 currentNavigationInstruction = null,
                 isNavigating = false,
                 isOffRoute = false,
+                arrivalAlertStationName = null,
                 transitDetails = null,
                 routeDetailsId = null,
                 routeResult = "Tap Set as Destination to route to this pin.",
@@ -328,6 +330,10 @@ class RouteViewModel(
         _uiState.update { it.copy(routeMessage = null) }
     }
 
+    fun dismissArrivalAlert() {
+        _uiState.update { it.copy(arrivalAlertStationName = null) }
+    }
+
     fun onArrivalAlertsEnabledChange(enabled: Boolean) {
         arrivalAlertSettingsRepository.setEnabled(enabled)
         if (!enabled) {
@@ -364,6 +370,7 @@ class RouteViewModel(
                         currentNavigationInstruction = null,
                         isNavigating = false,
                         isOffRoute = false,
+                        arrivalAlertStationName = null,
                         transitDetails = null,
                         routeDetailsId = null,
                         isCalculatingRoute = false,
@@ -382,9 +389,11 @@ class RouteViewModel(
 
         routeJob?.cancel()
         routeJob = viewModelScope.launch {
+            val wasNavigating = _uiState.value.isNavigating
             _uiState.update {
                 it.copy(
                     isCalculatingRoute = true,
+                    arrivalAlertStationName = null,
                     routeMessage = null,
                 )
             }
@@ -454,7 +463,7 @@ class RouteViewModel(
                         navigationSteps = transitRoute.steps,
                         activeNavigationStepIndex = transitRoute.steps.firstOrNull()?.index,
                         currentNavigationInstruction = transitRoute.steps.firstOrNull()?.instruction,
-                        isNavigating = transitRoute.steps.isNotEmpty(),
+                        isNavigating = wasNavigating,
                         isOffRoute = false,
                         transitDetails = transitDetails,
                         routeDetailsId = routeDetailsId,
@@ -463,8 +472,23 @@ class RouteViewModel(
                         routeMessage = null,
                     )
                 }
-                transitArrivalAlertTracker.reset()
-                startLocationTracking()
+                if (wasNavigating) {
+                    val firstStep = transitRoute.steps.firstOrNull()
+                    val nextStep = transitRoute.steps.getOrNull(1)
+                    _uiState.update {
+                        it.copy(
+                            activeNavigationStepIndex = firstStep?.index,
+                            currentNavigationInstruction = firstStep?.instruction,
+                            nextNavigationInstruction = nextStep?.instruction,
+                            remainingDistanceText = transitRoute.route.distanceText,
+                            remainingTimeText = transitRoute.route.durationText,
+                            estimatedArrivalTimeText = transitRoute.route.arrivalTimeText,
+                            hasArrivedAtDestination = false,
+                        )
+                    }
+                    transitArrivalAlertTracker.reset()
+                    startLocationTracking()
+                }
             } catch (exception: Exception) {
                 _uiState.update {
                     it.copy(
@@ -476,6 +500,7 @@ class RouteViewModel(
                         currentNavigationInstruction = null,
                         isNavigating = false,
                         isOffRoute = false,
+                        arrivalAlertStationName = null,
                         transitDetails = null,
                         routeDetailsId = null,
                         isCalculatingRoute = false,
@@ -484,6 +509,49 @@ class RouteViewModel(
                 }
             }
         }
+    }
+
+    fun startNavigation() {
+        val steps = _uiState.value.navigationSteps
+        if (steps.isEmpty()) return
+
+        val firstStep = steps.firstOrNull()
+        val nextStep = steps.getOrNull(1)
+
+        _uiState.update {
+            it.copy(
+                isNavigating = true,
+                hasArrivedAtDestination = false,
+                activeNavigationStepIndex = firstStep?.index,
+                currentNavigationInstruction = firstStep?.instruction,
+                nextNavigationInstruction = nextStep?.instruction,
+                remainingDistanceText = it.route?.distanceText,
+                remainingTimeText = it.route?.durationText,
+                estimatedArrivalTimeText = it.route?.arrivalTimeText,
+            )
+        }
+        transitArrivalAlertTracker.reset()
+        startLocationTracking()
+    }
+
+    fun endNavigation() {
+        locationTrackingJob?.cancel()
+        locationTrackingJob = null
+        _uiState.update {
+            it.copy(
+                isNavigating = false,
+                hasArrivedAtDestination = false,
+                activeNavigationStepIndex = null,
+                currentNavigationInstruction = null,
+                nextNavigationInstruction = null,
+                remainingDistanceText = null,
+                remainingTimeText = null,
+                estimatedArrivalTimeText = null,
+                isOffRoute = false,
+                routeMessage = null,
+            )
+        }
+        transitArrivalAlertTracker.reset()
     }
 
     private fun startLocationTracking() {
@@ -518,20 +586,78 @@ class RouteViewModel(
             return
         }
 
+        if (!state.isNavigating) {
+            _uiState.update {
+                it.copy(
+                    currentLocationLatitude = location.latitude,
+                    currentLocationLongitude = location.longitude,
+                )
+            }
+            return
+        }
+
         val activeStepIndex = NavigationTracker.activeStepIndex(
             location = location,
             steps = steps,
             previousIndex = state.activeNavigationStepIndex,
         )
         val isOffRoute = NavigationTracker.isOffRoute(location, steps)
-        val activeStep = steps.firstOrNull { it.index == activeStepIndex }
+        val activeStep = activeStepIndex?.let { steps.getOrNull(it) }
+        val nextStep = activeStepIndex?.let { steps.getOrNull(it + 1) }
+
+        var remainingDistanceMeters = 0
+        var remainingDurationSeconds = 0
+
+        if (activeStepIndex != null && activeStepIndex in steps.indices) {
+            val activeStepEnd = steps[activeStepIndex].endLocation
+            val distanceToActiveStepEnd = NavigationTracker.distanceMeters(location, activeStepEnd).toInt()
+            
+            val activeStepTotalDistance = steps[activeStepIndex].distanceMeters.coerceAtLeast(1)
+            val activeStepTotalDuration = steps[activeStepIndex].durationSeconds
+            val activeStepRemainingDuration = ((distanceToActiveStepEnd.toDouble() / activeStepTotalDistance) * activeStepTotalDuration).toInt()
+            
+            remainingDistanceMeters += distanceToActiveStepEnd
+            remainingDurationSeconds += activeStepRemainingDuration
+
+            for (i in (activeStepIndex + 1) until steps.size) {
+                remainingDistanceMeters += steps[i].distanceMeters
+                remainingDurationSeconds += steps[i].durationSeconds
+            }
+        } else {
+            remainingDistanceMeters = state.route?.distanceMeters ?: 0
+            remainingDurationSeconds = state.route?.durationSeconds ?: 0
+        }
+
+        val remainingDistanceText = remainingDistanceMeters.toDistanceText()
+        val remainingTimeText = remainingDurationSeconds.toDurationText()
+        val estimatedArrivalTimeText = formatArrivalTime(remainingDurationSeconds)
+
+        val lastStep = steps.lastOrNull()
+        var hasArrived = state.hasArrivedAtDestination
+        var currentInstruction = activeStep?.instruction
+
+        if (lastStep != null && !hasArrived) {
+            val distanceToDest = NavigationTracker.distanceMeters(location, lastStep.endLocation)
+            if (distanceToDest <= 20.0) {
+                hasArrived = true
+                currentInstruction = "Arrived at Destination"
+                viewModelScope.launch {
+                    transitArrivalNotifier.showDestinationArrival()
+                }
+            }
+        }
 
         _uiState.update {
             it.copy(
                 currentLocationLatitude = location.latitude,
                 currentLocationLongitude = location.longitude,
                 activeNavigationStepIndex = activeStepIndex,
-                currentNavigationInstruction = activeStep?.instruction,
+                currentNavigationInstruction = currentInstruction,
+                nextNavigationInstruction = nextStep?.instruction,
+                remainingDistanceText = remainingDistanceText,
+                remainingTimeText = remainingTimeText,
+                estimatedArrivalTimeText = estimatedArrivalTimeText,
+                hasArrivedAtDestination = hasArrived,
                 isNavigating = true,
                 isOffRoute = isOffRoute,
                 routeMessage = if (isOffRoute) {
@@ -546,7 +672,7 @@ class RouteViewModel(
 
         if (isOffRoute) {
             recalculateAfterDeviation(location)
-        } else {
+        } else if (!hasArrived) {
             maybeShowTransitArrivalAlert(location, activeStepIndex)
         }
     }
@@ -565,6 +691,7 @@ class RouteViewModel(
             thresholdMeters = state.alertDistanceThresholdMeters,
         ) ?: return
 
+        _uiState.update { it.copy(arrivalAlertStationName = alert.stationName) }
         transitArrivalNotifier.showArrivalAlert(alert.stationName)
     }
 
@@ -647,7 +774,7 @@ class RouteViewModel(
     }
 
     private fun Int.toDurationText(): String {
-        if (this <= 0) return ""
+        if (this <= 0) return "0 min"
         val minutes = (this + 59) / 60
         return if (minutes < 60) {
             "$minutes min"
@@ -656,6 +783,12 @@ class RouteViewModel(
             val remainingMinutes = minutes % 60
             if (remainingMinutes == 0) "$hours hr" else "$hours hr $remainingMinutes min"
         }
+    }
+
+    private fun formatArrivalTime(durationSeconds: Int): String {
+        val arrivalMillis = System.currentTimeMillis() + durationSeconds * 1000L
+        val formatter = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+        return formatter.format(java.util.Date(arrivalMillis))
     }
 
     private fun Int.toDistanceText(): String {

@@ -40,13 +40,13 @@ class TransitArrivalNotifier(
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("Prepare to Exit")
-            .setContentText("You are approaching $stationName. Please prepare to leave the train.")
+            .setContentTitle("Next Station")
+            .setContentText("Your next station is $stationName.")
             .setStyle(
                 NotificationCompat.BigTextStyle()
                     .bigText(
-                        "You are approaching $stationName.\n" +
-                            "Please prepare to leave the train.",
+                        "Your next station is $stationName.\n" +
+                            "This is your drop-off station. Please prepare to leave the train.",
                     ),
             )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -57,6 +57,42 @@ class TransitArrivalNotifier(
             .build()
 
         NotificationManagerCompat.from(context).notify(ARRIVAL_NOTIFICATION_ID, notification)
+    }
+
+    fun showDestinationArrival() {
+        createNotificationChannel()
+        vibrate()
+
+        if (!canPostNotifications()) return
+
+        val contentIntent = Intent(context, MainActivity::class.java).apply {
+            action = MainActivity.ACTION_OPEN_ROUTE
+            putExtra(MainActivity.EXTRA_OPEN_ROUTE, true)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            ROUTE_PENDING_INTENT_REQUEST_CODE,
+            contentIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle("Arrived")
+            .setContentText("Arrived at Destination")
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("You have arrived at your destination."),
+            )
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_NAVIGATION)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+
+        NotificationManagerCompat.from(context).notify(ARRIVAL_NOTIFICATION_ID + 1, notification)
     }
 
     private fun createNotificationChannel() {
