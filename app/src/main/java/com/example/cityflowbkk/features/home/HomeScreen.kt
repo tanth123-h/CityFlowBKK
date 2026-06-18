@@ -103,6 +103,7 @@ fun HomeScreen(
     uiState: HomeUiState = HomeUiState(),
     onPlanRouteClick: () -> Unit = {},
     onQuickActionClick: (QuickActionUiModel) -> Unit = {},
+    onTourClick: () -> Unit = {},
     placeDetailViewModel: PlaceDetailViewModel = viewModel(),
 ) {
     var selectedPopularPlace by remember { mutableStateOf<PopularPlaceUiModel?>(null) }
@@ -135,7 +136,13 @@ fun HomeScreen(
                 QuickActionsGrid(
                     modifier = Modifier.padding(horizontal = 24.dp),
                     quickActions = uiState.quickActions,
-                    onQuickActionClick = onQuickActionClick,
+                    onQuickActionClick = { action ->
+                        if (action.title == "Tour") {
+                            onTourClick()
+                        } else {
+                            onQuickActionClick(action)
+                        }
+                    },
                 )
 
                 PopularPlacesSection(

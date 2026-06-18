@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "name": "Wat Arun",
+    "description": "Temple of Dawn, one of Bangkok's most iconic riverside landmarks.",
+    "category": "Temple"
+  },
+  {
+    "id": 2,
+    "name": "Wat Pho",
+    "description": "Famous temple known for the Reclining Buddha.",
+    "category": "Temple"
+  },
+  {
+    "id": 3,
+    "name": "Grand Palace",
+    "description": "A historic royal complex and one of Bangkok's best-known cultural landmarks.",
+    "category": "Landmark"
+  },
+  {
+    "id": 4,
+    "name": "ICONSIAM",
+    "description": "A riverside shopping, dining, and lifestyle destination on the Chao Phraya River.",
+    "category": "Shopping"
+  },
+  {
+    "id": 5,
+    "name": "Siam Paragon",
+    "description": "A major Bangkok shopping complex at Siam with dining, luxury retail, cinema, and family attractions.",
+    "category": "Shopping"
+  },
+  {
+    "id": 6,
+    "name": "CentralWorld",
+    "description": "One of the largest shopping complexes in Bangkok.",
+    "category": "Shopping"
+  },
+  {
+    "id": 7,
+    "name": "MBK Center",
+    "description": "Large shopping mall well known for affordable goods and electronics.",
+    "category": "Shopping"
+  },
+  {
+    "id": 8,
+    "name": "Chatuchak Market",
+    "description": "One of Bangkok's largest weekend markets, known for local shops, food, fashion, plants, and souvenirs.",
+    "category": "Market"
+  },
+  {
+    "id": 9,
+    "name": "Asiatique",
+    "description": "A riverfront night market and entertainment area with restaurants, shops, and evening views.",
+    "category": "Market"
+  },
+  {
+    "id": 10,
+    "name": "Terminal 21",
+    "description": "An airport-themed shopping mall where each floor represents a different world city.",
+    "category": "Shopping"
+  },
+  {
+    "id": 11,
+    "name": "SEA LIFE Bangkok",
+    "description": "A large aquarium located beneath the Siam Paragon shopping mall.",
+    "category": "Attraction"
+  },
+  {
+    "id": 12,
+    "name": "Mahanakhon SkyWalk",
+    "description": "Thailand's highest observation deck offering 360-degree panoramic views.",
+    "category": "Attraction"
+  },
+  {
+    "id": 13,
+    "name": "Yaowarat",
+    "description": "Bangkok's bustling Chinatown, famous for its street food and gold shops.",
+    "category": "Neighborhood"
+  },
+  {
+    "id": 14,
+    "name": "Khao San Road",
+    "description": "A famous street known as a backpacker hub with vibrant nightlife and street food.",
+    "category": "Neighborhood"
+  },
+  {
+    "id": 15,
+    "name": "Lumpini Park",
+    "description": "A large public park in central Bangkok offering an oasis of green space.",
+    "category": "Park"
+  },
+  {
+    "id": 16,
+    "name": "Benjakitti Park",
+    "description": "A large park with a lake and an extensive network of elevated walkways.",
+    "category": "Park"
+  },
+  {
+    "id": 17,
+    "name": "Erawan Shrine",
+    "description": "A popular Hindu shrine housing a statue of Phra Phrom, the Thai representation of Brahma.",
+    "category": "Shrine"
+  },
+  {
+    "id": 18,
+    "name": "Jim Thompson House",
+    "description": "A museum housing the art collection of American businessman and architect Jim Thompson.",
+    "category": "Museum"
+  },
+  {
+    "id": 19,
+    "name": "Talad Noi",
+    "description": "A historic neighborhood known for its street art, traditional architecture, and cafes.",
+    "category": "Neighborhood"
+  },
+  {
+    "id": 20,
+    "name": "Jodd Fairs",
+    "description": "A popular, lively night market featuring food stalls, drinks, and vintage shops.",
+    "category": "Market"
+  }
+]
