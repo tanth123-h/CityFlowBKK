@@ -28,6 +28,14 @@ enum class HomeIcon {
     Map,
     Station,
     Profile,
+    Walk,
+    Cost,
+    Time,
+    ChevronDown,
+    ChevronUp,
+    Car,
+    Motorcycle,
+    Back,
 }
 
 @Composable
@@ -152,6 +160,76 @@ fun HomeIconGraphic(
                     quadraticTo(size.width * 0.5f, size.height * 0.56f, size.width * 0.82f, size.height * 0.86f)
                 }
                 drawPath(shoulders, tint, style = stroke)
+            }
+
+            HomeIcon.Walk -> {
+                drawCircle(tint, radius = size.minDimension * 0.1f, center = point(0.54f, 0.22f))
+                drawLine(tint, point(0.54f, 0.32f), point(0.54f, 0.54f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                drawLine(tint, point(0.54f, 0.44f), point(0.38f, 0.5f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                drawLine(tint, point(0.54f, 0.44f), point(0.7f, 0.5f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                drawLine(tint, point(0.54f, 0.54f), point(0.38f, 0.78f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                drawLine(tint, point(0.54f, 0.54f), point(0.7f, 0.86f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+            }
+
+            HomeIcon.Cost -> {
+                drawCircle(tint, radius = size.minDimension * 0.36f, center = point(0.5f, 0.5f), style = stroke)
+                val path = Path().apply {
+                    moveTo(size.width * 0.5f, size.height * 0.24f)
+                    lineTo(size.width * 0.5f, size.height * 0.76f)
+                }
+                drawPath(path, tint, style = stroke)
+                drawLine(tint, point(0.36f, 0.36f), point(0.64f, 0.36f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                drawLine(tint, point(0.36f, 0.5f), point(0.64f, 0.5f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                drawLine(tint, point(0.36f, 0.64f), point(0.64f, 0.64f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+            }
+
+            HomeIcon.Time -> {
+                drawCircle(tint, radius = size.minDimension * 0.36f, center = point(0.5f, 0.5f), style = stroke)
+                drawLine(tint, point(0.5f, 0.5f), point(0.5f, 0.28f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                drawLine(tint, point(0.5f, 0.5f), point(0.68f, 0.5f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+            }
+
+            HomeIcon.ChevronDown -> {
+                drawLine(tint, point(0.3f, 0.4f), point(0.5f, 0.6f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                drawLine(tint, point(0.5f, 0.6f), point(0.7f, 0.4f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+            }
+
+            HomeIcon.ChevronUp -> {
+                drawLine(tint, point(0.3f, 0.6f), point(0.5f, 0.4f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                drawLine(tint, point(0.5f, 0.4f), point(0.7f, 0.6f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+            }
+
+            HomeIcon.Car -> {
+                drawRoundRect(
+                    color = tint,
+                    topLeft = point(0.18f, 0.42f),
+                    size = Size(size.width * 0.64f, size.height * 0.32f),
+                    cornerRadius = CornerRadius(size.minDimension * 0.08f),
+                    style = stroke,
+                )
+                val roof = Path().apply {
+                    moveTo(size.width * 0.28f, size.height * 0.42f)
+                    lineTo(size.width * 0.36f, size.height * 0.26f)
+                    lineTo(size.width * 0.64f, size.height * 0.26f)
+                    lineTo(size.width * 0.72f, size.height * 0.42f)
+                }
+                drawPath(roof, tint, style = stroke)
+                drawCircle(tint, radius = size.minDimension * 0.08f, center = point(0.3f, 0.74f), style = stroke)
+                drawCircle(tint, radius = size.minDimension * 0.08f, center = point(0.7f, 0.74f), style = stroke)
+            }
+
+            HomeIcon.Motorcycle -> {
+                drawCircle(tint, radius = size.minDimension * 0.12f, center = point(0.28f, 0.7f), style = stroke)
+                drawCircle(tint, radius = size.minDimension * 0.12f, center = point(0.72f, 0.7f), style = stroke)
+                drawLine(tint, point(0.28f, 0.7f), point(0.5f, 0.44f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                drawLine(tint, point(0.5f, 0.44f), point(0.72f, 0.7f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                drawLine(tint, point(0.5f, 0.44f), point(0.5f, 0.28f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                drawCircle(tint, radius = size.minDimension * 0.08f, center = point(0.5f, 0.28f))
+            }
+
+            HomeIcon.Back -> {
+                drawLine(tint, point(0.62f, 0.24f), point(0.3f, 0.5f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                drawLine(tint, point(0.3f, 0.5f), point(0.62f, 0.76f), strokeWidth = stroke.width, cap = StrokeCap.Round)
             }
         }
     }

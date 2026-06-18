@@ -95,7 +95,6 @@ fun HomeScreen(
     onPlanRouteClick: () -> Unit = {},
     onNavigateToMap: () -> Unit = {},
     onQuickActionClick: (QuickActionUiModel) -> Unit = {},
-    onPopularPlaceClick: (PopularPlaceUiModel) -> Unit = {},
     placeDetailViewModel: PlaceDetailViewModel = viewModel(),
 ) {
     var selectedPopularPlace by remember { mutableStateOf<PopularPlaceUiModel?>(null) }

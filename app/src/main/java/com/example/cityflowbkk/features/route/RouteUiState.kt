@@ -7,6 +7,7 @@ import com.example.cityflowbkk.features.map.MapLatLng
 import com.example.cityflowbkk.features.map.NavigationStepUiModel
 import com.example.cityflowbkk.features.map.PlaceSuggestionUiModel
 import com.example.cityflowbkk.features.map.RouteUiModel
+import androidx.compose.ui.graphics.Color
 
 data class RouteUiState(
     val destination: String = "",
@@ -14,8 +15,11 @@ data class RouteUiState(
     val selectedDestination: MapPlaceUiModel? = null,
     val isSearchingDestination: Boolean = false,
     val route: RouteUiModel? = null,
-    val routePoints: List<MapLatLng> = emptyList(),
+    val routeSegments: List<RouteSegmentUiModel> = emptyList(),
+    val overviewPolyline: List<MapLatLng> = emptyList(),
     val navigationSteps: List<NavigationStepUiModel> = emptyList(),
+    val transitDetails: TransitRouteDetailsUiModel? = null,
+    val routeDetailsId: String? = null,
     val isCalculatingRoute: Boolean = false,
     val travelRecommendations: List<TravelRecommendationUiModel> = emptyList(),
     val routeGuidanceOptions: List<RouteGuidanceUiModel> = emptyList(),
@@ -44,6 +48,28 @@ data class RouteUiState(
     val routeMessage: String? = null,
 )
 
+data class RouteSegmentUiModel(
+    val points: List<MapLatLng>,
+    val color: Color,
+    val segmentType: RouteSegmentType,
+)
+
+enum class RouteSegmentType {
+    Walking,
+    Transit,
+    Other,
+}
+
+data class TransitRouteDetailsUiModel(
+    val lineName: String,
+    val departureStation: String,
+    val arrivalStation: String,
+    val stationCount: Int,
+    val durationText: String,
+    val distanceText: String,
+    val fareText: String,
+)
+
 data class RouteMapMarkerUiModel(
     val id: String,
     val title: String,
@@ -56,9 +82,6 @@ enum class TravelMode(
     val label: String,
     val iconLabel: String,
 ) {
-    Walking("Walking", "🚶"),
-    Motorcycle("Motorcycle", "🏍"),
-    Car("Car", "🚗"),
     Bts("BTS", "🚆"),
 }
 

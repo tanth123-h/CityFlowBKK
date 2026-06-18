@@ -14,6 +14,7 @@ class DirectionsRepository(
     suspend fun getRoute(
         origin: MapLatLng,
         destination: MapLatLng,
+        mode: String = "driving",
     ): RouteResult = withContext(Dispatchers.IO) {
         if (apiKey.isBlank()) {
             error("Missing Google Maps API key. Add GOOGLE_MAPS_API_KEY to local.properties.")
@@ -25,7 +26,7 @@ class DirectionsRepository(
             "https://maps.googleapis.com/maps/api/directions/json?" +
                 "origin=${originParam.urlEncode()}&" +
                 "destination=${destinationParam.urlEncode()}&" +
-                "mode=driving&" +
+                "mode=${mode.urlEncode()}&" +
                 "key=${apiKey.urlEncode()}",
         )
 
@@ -65,8 +66,66 @@ class DirectionsRepository(
             val leg = route.getJSONArray("legs").getJSONObject(0)
             val distance = leg.getJSONObject("distance")
             val duration = leg.getJSONObject("duration")
+            val fare = route.optJSONObject("fare")
             val encodedPolyline = route.getJSONObject("overview_polyline").getString("points")
             val steps = leg.optJSONArray("steps")
+
+            // Parse route segments (for multi-modal transit)
+            val segments = buildList {
+                if (steps != null) {
+                    for (index in 0 until steps.length()) {
+                        val step = steps.optJSONObject(index) ?: continue
+                        val stepTravelMode = step.optString("travel_mode")
+                        val stepPolyline = step.optJSONObject("polyline")?.optString("points")
+                        
+                        if (stepPolyline.isNullOrBlank()) continue
+                        
+                        val stepPoints = PolylineDecoder.decode(stepPolyline)
+                        
+                        val travelMode = when (stepTravelMode) {
+                            "WALKING" -> TravelMode.WALKING
+                            "TRANSIT" -> TravelMode.TRANSIT
+                            "DRIVING" -> TravelMode.DRIVING
+                            else -> TravelMode.WALKING
+                        }
+                        
+                        val transitDetails = if (stepTravelMode == "TRANSIT") {
+                            step.optJSONObject("transit_details")?.let { transit ->
+                                val line = transit.optJSONObject("line")
+                                val departureStop = transit.optJSONObject("departure_stop")
+                                val arrivalStop = transit.optJSONObject("arrival_stop")
+                                
+                                TransitDetails(
+                                    lineName = line?.optString("name") ?: "Transit",
+                                    lineShortName = line?.optString("short_name"),
+                                    lineColor = line?.optString("color"),
+                                    departureStop = departureStop?.optString("name") ?: "",
+                                    arrivalStop = arrivalStop?.optString("name") ?: "",
+                                    numStops = transit.optInt("num_stops", 0),
+                                    vehicleType = line?.optJSONObject("vehicle")?.optString("name"),
+                                )
+                            }
+                        } else {
+                            null
+                        }
+                        
+                        val stepDistance = step.optJSONObject("distance")
+                        val stepDuration = step.optJSONObject("duration")
+
+                        add(
+                            RouteSegment(
+                                points = stepPoints,
+                                travelMode = travelMode,
+                                transitDetails = transitDetails,
+                                distanceText = stepDistance?.optString("text").orEmpty(),
+                                distanceMeters = stepDistance?.optInt("value", 0) ?: 0,
+                                durationText = stepDuration?.optString("text").orEmpty(),
+                                durationSeconds = stepDuration?.optInt("value", 0) ?: 0,
+                            ),
+                        )
+                    }
+                }
+            }
 
             RouteResult(
                 route = RouteUiModel(
@@ -77,6 +136,10 @@ class DirectionsRepository(
                     arrivalTimeText = formatArrivalTime(duration.getInt("value")),
                 ),
                 points = PolylineDecoder.decode(encodedPolyline),
+                segments = segments,
+                fareText = fare?.optString("text")?.takeIf { it.isNotBlank() },
+                fareCurrency = fare?.optString("currency")?.takeIf { it.isNotBlank() },
+                fareValue = if (fare != null && fare.has("value")) fare.optDouble("value") else null,
                 steps = buildList {
                     if (steps == null) return@buildList
 
@@ -134,4 +197,34 @@ data class RouteResult(
     val route: RouteUiModel,
     val points: List<MapLatLng>,
     val steps: List<NavigationStepUiModel>,
+    val segments: List<RouteSegment> = emptyList(),
+    val fareText: String? = null,
+    val fareCurrency: String? = null,
+    val fareValue: Double? = null,
+)
+
+data class RouteSegment(
+    val points: List<MapLatLng>,
+    val travelMode: TravelMode,
+    val transitDetails: TransitDetails? = null,
+    val distanceText: String,
+    val distanceMeters: Int,
+    val durationText: String,
+    val durationSeconds: Int,
+)
+
+enum class TravelMode {
+    WALKING,
+    TRANSIT,
+    DRIVING,
+}
+
+data class TransitDetails(
+    val lineName: String,
+    val lineShortName: String?,
+    val lineColor: String?,
+    val departureStop: String,
+    val arrivalStop: String,
+    val numStops: Int,
+    val vehicleType: String?, // "BTS", "MRT", "BUS", etc.
 )

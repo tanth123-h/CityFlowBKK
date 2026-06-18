@@ -1,6 +1,7 @@
 package com.example.cityflowbkk.features.route
 
 import android.app.Application
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cityflowbkk.BuildConfig
@@ -11,6 +12,8 @@ import com.example.cityflowbkk.features.map.LocationRepository
 import com.example.cityflowbkk.features.map.MapLatLng
 import com.example.cityflowbkk.features.map.MapSearchRepository
 import com.example.cityflowbkk.features.map.PlaceSuggestionUiModel
+import com.example.cityflowbkk.features.map.RouteResult
+import com.example.cityflowbkk.features.map.TravelMode as GoogleTravelMode
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +28,6 @@ class RouteViewModel(
     private val locationRepository = LocationRepository(application.applicationContext)
     private val searchRepository = MapSearchRepository(BuildConfig.GOOGLE_MAPS_API_KEY)
     private val directionsRepository = DirectionsRepository(BuildConfig.GOOGLE_MAPS_API_KEY)
-    private val btsTravelRepository = BtsTravelRepository()
 
     private val _uiState = MutableStateFlow(RouteUiState())
     val uiState: StateFlow<RouteUiState> = _uiState.asStateFlow()
@@ -43,8 +45,11 @@ class RouteViewModel(
                 destination = destination,
                 selectedDestination = null,
                 route = null,
-                routePoints = emptyList(),
+                routeSegments = emptyList(),
+                overviewPolyline = emptyList(),
                 navigationSteps = emptyList(),
+                transitDetails = null,
+                routeDetailsId = null,
                 travelRecommendations = emptyList(),
                 routeGuidanceOptions = emptyList(),
                 selectedGuidanceMode = null,
@@ -71,7 +76,7 @@ class RouteViewModel(
             delay(SEARCH_DEBOUNCE_MS)
             _uiState.update { it.copy(isSearchingDestination = true) }
             try {
-                val suggestions = searchRepository.autocomplete(destination)
+                val suggestions = searchRepository.autocomplete(destination, _uiState.value.currentLocation())
                 _uiState.update {
                     it.copy(
                         destinationSuggestions = suggestions,
@@ -157,7 +162,7 @@ class RouteViewModel(
                 it.copy(
                     hasLocationPermission = false,
                     isLocationLoading = false,
-                    locationMessage = null,
+                    locationMessage = "Allow location access to plan a route from your current position.",
                 )
             }
             return
@@ -177,7 +182,7 @@ class RouteViewModel(
                 if (location == null) {
                     it.copy(
                         isLocationLoading = false,
-                        locationMessage = null,
+                        locationMessage = "Could not get your current GPS location. Try again when location is available.",
                     )
                 } else {
                     it.copy(
@@ -223,29 +228,34 @@ class RouteViewModel(
 
     private fun calculateRouteIfPossible() {
         val state = _uiState.value
-        val currentLatitude = state.currentLocationLatitude
-        val currentLongitude = state.currentLocationLongitude
-        val destination = state.selectedDestination
+        val destination = state.selectedDestination ?: return
+        val origin = state.currentLocation()
 
-        if (destination == null) return
-
-        if (currentLatitude == null || currentLongitude == null) {
-            _uiState.update {
-                it.copy(
-                    route = null,
-                    routePoints = emptyList(),
-                    navigationSteps = emptyList(),
-                    travelRecommendations = emptyList(),
-                    routeGuidanceOptions = emptyList(),
-                    selectedGuidanceMode = null,
-                    isCalculatingRoute = false,
-                    routeResult = destination.toDestinationResultText(),
-                    travelRecommendation = "Recommended travel options will appear here.",
-                    routeMessage = null,
-                )
+        if (origin == null) {
+            if (state.hasLocationPermission && !state.isLocationLoading) {
+                loadCurrentLocation(moveCamera = false)
+            } else {
+                _uiState.update {
+                    it.copy(
+                        route = null,
+                        routeSegments = emptyList(),
+                        overviewPolyline = emptyList(),
+                        navigationSteps = emptyList(),
+                        transitDetails = null,
+                        routeDetailsId = null,
+                        isCalculatingRoute = false,
+                        routeMessage = if (state.hasLocationPermission) {
+                            "Getting your current location before calculating the route."
+                        } else {
+                            "Allow location access to plan a route from your current position."
+                        },
+                    )
+                }
             }
             return
         }
+
+        val dest = MapLatLng(destination.latitude, destination.longitude)
 
         routeJob?.cancel()
         routeJob = viewModelScope.launch {
@@ -257,35 +267,66 @@ class RouteViewModel(
             }
 
             try {
-                val result = directionsRepository.getRoute(
-                    origin = MapLatLng(currentLatitude, currentLongitude),
-                    destination = MapLatLng(destination.latitude, destination.longitude),
+                val transitRoute = directionsRepository.getRoute(origin, dest, mode = "transit")
+                val uiSegments = transitRoute.segments.map { segment ->
+                    val segmentType = when (segment.travelMode) {
+                        GoogleTravelMode.WALKING -> RouteSegmentType.Walking
+                        GoogleTravelMode.TRANSIT -> RouteSegmentType.Transit
+                        GoogleTravelMode.DRIVING -> RouteSegmentType.Other
+                    }
+                    RouteSegmentUiModel(
+                        points = segment.points,
+                        color = when (segmentType) {
+                            RouteSegmentType.Walking -> Color.Blue
+                            RouteSegmentType.Transit -> Color.Green
+                            RouteSegmentType.Other -> Color.Gray
+                        },
+                        segmentType = segmentType,
+                    )
+                }
+
+                val transitSegments = transitRoute.segments.filter {
+                    it.travelMode == GoogleTravelMode.TRANSIT && it.transitDetails != null
+                }
+                val firstTransit = transitSegments.firstOrNull()
+                val lastTransit = transitSegments.lastOrNull()
+                val transitDetails = if (firstTransit != null && lastTransit != null) {
+                    TransitRouteDetailsUiModel(
+                        lineName = transitSegments.joinToString(" / ") {
+                            it.transitDetails?.lineShortName
+                                ?: it.transitDetails?.lineName
+                                ?: "Transit"
+                        },
+                        departureStation = firstTransit.transitDetails?.departureStop.orEmpty(),
+                        arrivalStation = lastTransit.transitDetails?.arrivalStop.orEmpty(),
+                        stationCount = transitSegments.sumOf { it.transitDetails?.numStops ?: 0 },
+                        durationText = transitSegments.sumOf { it.durationSeconds }
+                            .toDurationText()
+                            .ifBlank { transitRoute.route.durationText },
+                        distanceText = transitSegments.sumOf { it.distanceMeters }.toDistanceText(),
+                        fareText = transitRoute.fareText ?: "Estimated fare unavailable",
+                    )
+                } else {
+                    null
+                }
+                val routeDetailsId = RouteDetailsStore.put(
+                    RouteDetailsPayload(
+                        destinationName = destination.name,
+                        destinationAddress = destination.address,
+                        routeResult = transitRoute,
+                    ),
                 )
-                val recommendations = buildTravelRecommendations(
-                    origin = MapLatLng(currentLatitude, currentLongitude),
-                    destination = MapLatLng(destination.latitude, destination.longitude),
-                    drivingDistanceMeters = result.route.distanceMeters,
-                    drivingDurationSeconds = result.route.durationSeconds,
-                )
-                val guidanceOptions = buildGuidanceOptions(
-                    recommendations = recommendations,
-                    navigationSteps = result.steps,
-                )
+
                 _uiState.update {
                     it.copy(
-                        route = result.route,
-                        routePoints = result.points,
-                        navigationSteps = result.steps,
-                        travelRecommendations = recommendations,
-                        routeGuidanceOptions = guidanceOptions,
-                        selectedGuidanceMode = recommendations.firstOrNull { recommendation ->
-                            recommendation.isFastest
-                        }?.mode ?: TravelMode.Car,
+                        route = transitRoute.route,
+                        routeSegments = uiSegments,
+                        overviewPolyline = transitRoute.points,
+                        navigationSteps = transitRoute.steps,
+                        transitDetails = transitDetails,
+                        routeDetailsId = routeDetailsId,
                         isCalculatingRoute = false,
-                        routeResult = "${result.route.distanceText} - ${result.route.durationText}",
-                        travelRecommendation = recommendations.joinToString(separator = "\n") { recommendation ->
-                            "${recommendation.mode.label}: ${recommendation.durationMinutes} min, ${recommendation.estimatedCostBaht} baht"
-                        },
+                        routeResult = transitRoute.toRouteResultText(transitDetails),
                         routeMessage = null,
                     )
                 }
@@ -293,11 +334,11 @@ class RouteViewModel(
                 _uiState.update {
                     it.copy(
                         route = null,
-                        routePoints = emptyList(),
+                        routeSegments = emptyList(),
+                        overviewPolyline = emptyList(),
                         navigationSteps = emptyList(),
-                        travelRecommendations = emptyList(),
-                        routeGuidanceOptions = emptyList(),
-                        selectedGuidanceMode = null,
+                        transitDetails = null,
+                        routeDetailsId = null,
                         isCalculatingRoute = false,
                         routeMessage = exception.message ?: "Could not calculate route.",
                     )
@@ -306,136 +347,25 @@ class RouteViewModel(
         }
     }
 
-    fun onGuidanceModeSelected(mode: TravelMode) {
-        _uiState.update { it.copy(selectedGuidanceMode = mode) }
+    private fun RouteUiState.currentLocation(): MapLatLng? {
+        val latitude = currentLocationLatitude ?: return null
+        val longitude = currentLocationLongitude ?: return null
+        return MapLatLng(latitude, longitude)
     }
 
-    private fun buildTravelRecommendations(
-        origin: MapLatLng,
-        destination: MapLatLng,
-        drivingDistanceMeters: Int,
-        drivingDurationSeconds: Int,
-    ): List<TravelRecommendationUiModel> {
-        val distanceKm = drivingDistanceMeters / 1000.0
-        val walking = TravelRecommendationUiModel(
-            mode = TravelMode.Walking,
-            durationMinutes = (drivingDistanceMeters / WALKING_METERS_PER_MINUTE).toInt().coerceAtLeast(1),
-            estimatedCostBaht = 0,
-            routeSummary = "Walk ${formatDistance(drivingDistanceMeters)} to the destination.",
-            instructions = listOf(
-                "Follow pedestrian-friendly streets where available.",
-                "Use crossings and station walkways where possible.",
-            ),
-        )
-        val motorcycle = TravelRecommendationUiModel(
-            mode = TravelMode.Motorcycle,
-            durationMinutes = (distanceKm / MOTORCYCLE_KM_PER_HOUR * 60).toInt().coerceAtLeast(3),
-            estimatedCostBaht = (20 + distanceKm * 9).toInt().coerceAtLeast(25),
-            routeSummary = "Fast point-to-point ride for short urban trips.",
-            instructions = listOf(
-                "Book a motorcycle taxi or ride-hailing motorcycle.",
-                "Confirm helmet availability and pickup point before departure.",
-            ),
-        )
-        val car = TravelRecommendationUiModel(
-            mode = TravelMode.Car,
-            durationMinutes = (drivingDurationSeconds / 60.0).toInt().coerceAtLeast(1),
-            estimatedCostBaht = (45 + distanceKm * 12).toInt().coerceAtLeast(45),
-            routeSummary = "Drive ${formatDistance(drivingDistanceMeters)} using the calculated road route.",
-            instructions = listOf(
-                "Follow the map route from your current location.",
-                "Allow extra time for parking and traffic near the destination.",
-            ),
-        )
-        val bts = btsTravelRepository.buildRecommendation(origin, destination)
-        val recommendations = listOf(walking, motorcycle, car, bts)
-        val fastestMinutes = recommendations.minOf { it.durationMinutes }
-        val cheapestCost = recommendations.minOf { it.estimatedCostBaht }
-        return recommendations.map {
-            it.copy(
-                isFastest = it.durationMinutes == fastestMinutes,
-                isCheapest = it.estimatedCostBaht == cheapestCost,
-            )
-        }
-    }
-
-    private fun buildGuidanceOptions(
-        recommendations: List<TravelRecommendationUiModel>,
-        navigationSteps: List<com.example.cityflowbkk.features.map.NavigationStepUiModel>,
-    ): List<RouteGuidanceUiModel> {
-        return recommendations.map { recommendation ->
-            val steps = when (recommendation.mode) {
-                TravelMode.Walking -> navigationSteps.mapIndexed { index, step ->
-                    RouteGuidanceStepUiModel(
-                        title = "Walk step ${index + 1}",
-                        detail = step.instruction.toWalkingInstruction(),
-                        durationText = step.durationText,
-                        distanceText = step.distanceText,
-                    )
-                }.ifEmpty {
-                    recommendation.instructions.mapIndexed { index, instruction ->
-                        RouteGuidanceStepUiModel(
-                            title = "Walk step ${index + 1}",
-                            detail = instruction,
-                        )
-                    }
-                }
-
-                TravelMode.Car -> navigationSteps.mapIndexed { index, step ->
-                    RouteGuidanceStepUiModel(
-                        title = "Drive step ${index + 1}",
-                        detail = step.instruction,
-                        durationText = step.durationText,
-                        distanceText = step.distanceText,
-                    )
-                }
-
-                TravelMode.Bts -> recommendation.instructions.mapIndexed { index, instruction ->
-                    RouteGuidanceStepUiModel(
-                        title = when (index) {
-                            0 -> "Walk to station"
-                            1 -> "Board train"
-                            2 -> "Ride"
-                            3 -> "Exit station"
-                            else -> "Walk to destination"
-                        },
-                        detail = instruction,
-                    )
-                }
-
-                TravelMode.Motorcycle -> recommendation.instructions.mapIndexed { index, instruction ->
-                    RouteGuidanceStepUiModel(
-                        title = "Motorcycle step ${index + 1}",
-                        detail = instruction,
-                    )
-                }
+    private fun RouteResult.toRouteResultText(
+        details: TransitRouteDetailsUiModel?,
+    ): String {
+        return buildString {
+            append("Total: ${route.distanceText} - ${route.durationText}")
+            append("\n")
+            append("Origin: Current GPS location")
+            details?.let {
+                append("\n")
+                append("${it.departureStation} to ${it.arrivalStation}")
+                append("\n")
+                append("${it.stationCount} stations - Fare: ${it.fareText}")
             }
-
-            RouteGuidanceUiModel(
-                mode = recommendation.mode,
-                title = "${recommendation.mode.label} Guidance",
-                summary = recommendation.routeSummary,
-                durationMinutes = recommendation.durationMinutes,
-                estimatedCostBaht = recommendation.estimatedCostBaht,
-                steps = steps,
-            )
-        }
-    }
-
-    private fun String.toWalkingInstruction(): String {
-        val lowered = lowercase()
-        return if (lowered.startsWith("walk") || lowered.startsWith("turn") || lowered.startsWith("head")) {
-            this
-        } else {
-            "Walk and $this"
-        }
-    }
-
-    private fun formatDistance(distanceMeters: Int): String {
-        return if (distanceMeters >= 1000) {
-            "${"%.1f".format(distanceMeters / 1000.0)} km"
-        } else {
-            "$distanceMeters m"
         }
     }
 
@@ -449,9 +379,27 @@ class RouteViewModel(
         }
     }
 
+    private fun Int.toDurationText(): String {
+        if (this <= 0) return ""
+        val minutes = (this + 59) / 60
+        return if (minutes < 60) {
+            "$minutes min"
+        } else {
+            val hours = minutes / 60
+            val remainingMinutes = minutes % 60
+            if (remainingMinutes == 0) "$hours hr" else "$hours hr $remainingMinutes min"
+        }
+    }
+
+    private fun Int.toDistanceText(): String {
+        return if (this >= 1000) {
+            String.format("%.1f km", this / 1000.0)
+        } else {
+            "$this m"
+        }
+    }
+
     companion object {
         private const val SEARCH_DEBOUNCE_MS = 300L
-        private const val WALKING_METERS_PER_MINUTE = 75.0
-        private const val MOTORCYCLE_KM_PER_HOUR = 24.0
     }
 }

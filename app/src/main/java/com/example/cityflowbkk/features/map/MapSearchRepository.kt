@@ -9,7 +9,10 @@ import org.json.JSONObject
 class MapSearchRepository(
     private val apiKey: String,
 ) {
-    suspend fun autocomplete(query: String): List<PlaceSuggestionUiModel> = withContext(Dispatchers.IO) {
+    suspend fun autocomplete(
+        query: String,
+        locationBias: MapLatLng? = null,
+    ): List<PlaceSuggestionUiModel> = withContext(Dispatchers.IO) {
         if (apiKey.isBlank()) {
             error("Missing Google Places API key. Add GOOGLE_MAPS_API_KEY to local.properties.")
         }
@@ -17,6 +20,7 @@ class MapSearchRepository(
             return@withContext emptyList()
         }
 
+        val biasCenter = locationBias ?: MapLatLng(BANGKOK_LATITUDE, BANGKOK_LONGITUDE)
         val body = JSONObject()
             .put("input", query)
             .put(
@@ -27,8 +31,8 @@ class MapSearchRepository(
                         .put(
                             "center",
                             JSONObject()
-                                .put("latitude", BANGKOK_LATITUDE)
-                                .put("longitude", BANGKOK_LONGITUDE),
+                                .put("latitude", biasCenter.latitude)
+                                .put("longitude", biasCenter.longitude),
                         )
                         .put("radius", 50_000.0),
                 ),

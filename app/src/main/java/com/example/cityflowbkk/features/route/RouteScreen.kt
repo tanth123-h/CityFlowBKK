@@ -6,6 +6,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +21,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -67,6 +69,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 @Composable
 fun RouteScreen(
     viewModel: RouteViewModel = viewModel(),
+    onNavigateToDetails: (routeDetailsId: String) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var hasRequestedPermission by remember { mutableStateOf(false) }
@@ -98,6 +101,7 @@ fun RouteScreen(
         onDestinationSelected = viewModel::onDestinationSelected,
         onDismissSearchMessage = viewModel::dismissSearchMessage,
         onDismissRouteMessage = viewModel::dismissRouteMessage,
+        onNavigateToDetails = onNavigateToDetails,
     )
 }
 
@@ -112,6 +116,7 @@ private fun RouteContent(
     onDestinationSelected: (PlaceSuggestionUiModel) -> Unit,
     onDismissSearchMessage: () -> Unit,
     onDismissRouteMessage: () -> Unit,
+    onNavigateToDetails: (routeDetailsId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val bottomSheetScaffoldState = rememberBottomSheetScaffoldState()
@@ -128,6 +133,7 @@ private fun RouteContent(
                 onDismissLocationMessage = onDismissLocationMessage,
                 onDismissSearchMessage = onDismissSearchMessage,
                 onDismissRouteMessage = onDismissRouteMessage,
+                onNavigateToDetails = onNavigateToDetails,
             )
         },
         containerColor = Color.Transparent,
@@ -160,6 +166,7 @@ private fun RouteBottomSheetContent(
     onDismissLocationMessage: () -> Unit,
     onDismissSearchMessage: () -> Unit,
     onDismissRouteMessage: () -> Unit,
+    onNavigateToDetails: (routeDetailsId: String) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -195,16 +202,38 @@ private fun RouteBottomSheetContent(
             MessageCard(
                 message = message,
                 onDismiss = onDismissRouteMessage,
+                isError = false,
             )
         }
 
         if (uiState.isCalculatingRoute || uiState.route != null) {
             RouteSummaryCard(
-                distance = uiState.route?.distanceText,
-                duration = uiState.route?.durationText,
-                arrivalTime = uiState.route?.arrivalTimeText,
+                uiState = uiState,
                 isCalculatingRoute = uiState.isCalculatingRoute,
             )
+        }
+
+        uiState.transitDetails?.let { details ->
+            TransitRouteDetailsCard(details = details)
+        }
+
+        uiState.routeDetailsId?.let { routeDetailsId ->
+            Button(
+                onClick = { onNavigateToDetails(routeDetailsId) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                HomeIconGraphic(
+                    icon = HomeIcon.Route,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                )
+                Text(
+                    text = "View route details",
+                    modifier = Modifier.padding(start = 8.dp),
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
         }
 
         RouteInfoSection(
@@ -214,7 +243,12 @@ private fun RouteBottomSheetContent(
         )
 
         if (uiState.travelRecommendations.isNotEmpty()) {
-            TravelRecommendationsSection(recommendations = uiState.travelRecommendations)
+            TravelRecommendationsSection(
+                recommendations = uiState.travelRecommendations,
+                onRecommendationClick = { recommendation ->
+                    uiState.routeDetailsId?.let(onNavigateToDetails)
+                },
+            )
         }
 
         if (uiState.navigationSteps.isNotEmpty()) {
@@ -398,10 +432,21 @@ private fun RouteMap(
                 )
             }
 
-            if (uiState.routePoints.isNotEmpty()) {
+            // Render route polylines
+            if (uiState.routeSegments.isNotEmpty()) {
+                // Use segments for multi-colored rendering (walking = blue, transit = green)
+                uiState.routeSegments.forEach { segment ->
+                    Polyline(
+                        points = segment.points.map { LatLng(it.latitude, it.longitude) },
+                        color = segment.color,
+                        width = 10f,
+                    )
+                }
+            } else if (uiState.overviewPolyline.isNotEmpty()) {
+                // Fallback: use overview polyline if segments are empty
                 Polyline(
-                    points = uiState.routePoints.map { LatLng(it.latitude, it.longitude) },
-                    color = CityFlowBlue,
+                    points = uiState.overviewPolyline.map { LatLng(it.latitude, it.longitude) },
+                    color = Color.Blue,
                     width = 10f,
                 )
             }
@@ -429,9 +474,7 @@ private fun RouteMap(
 
 @Composable
 private fun RouteSummaryCard(
-    distance: String?,
-    duration: String?,
-    arrivalTime: String?,
+    uiState: RouteUiState,
     isCalculatingRoute: Boolean,
 ) {
     Card(
@@ -451,28 +494,31 @@ private fun RouteSummaryCard(
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
             if (isCalculatingRoute) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimaryContainer)
             } else {
                 Text(
-                    text = "${distance.orEmpty()} - ${duration.orEmpty()}",
+                    text = "${uiState.route?.distanceText} · ${uiState.route?.durationText}",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
-                Text(
-                    text = "Arrive around ${arrivalTime.orEmpty()}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
+
+                uiState.route?.arrivalTimeText?.let { arrivalTime ->
+                    Text(
+                        text = "Arrive around $arrivalTime",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                    )
+                }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TravelRecommendationsSection(
     recommendations: List<TravelRecommendationUiModel>,
+    onRecommendationClick: (TravelRecommendationUiModel) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
@@ -482,7 +528,9 @@ private fun TravelRecommendationsSection(
         )
         recommendations.forEach { recommendation ->
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onRecommendationClick(recommendation) },
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -675,6 +723,82 @@ private fun RouteInfoSection(
     }
 }
 
+@Composable
+private fun TransitRouteDetailsCard(
+    details: TransitRouteDetailsUiModel,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                HomeIconGraphic(
+                    icon = HomeIcon.Train,
+                    contentDescription = "Transit route",
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.padding(8.dp),
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = "Transit Route",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                    Text(
+                        text = details.lineName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
+                    )
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                RouteMetricRow(label = "Departure station", value = details.departureStation)
+                RouteMetricRow(label = "Arrival station", value = details.arrivalStation)
+                RouteMetricRow(label = "Number of stations", value = details.stationCount.toString())
+                RouteMetricRow(label = "Travel duration", value = details.durationText)
+                RouteMetricRow(label = "Distance", value = details.distanceText)
+                RouteMetricRow(label = "Estimated BTS fare", value = details.fareText)
+            }
+        }
+    }
+}
+
+@Composable
+private fun RouteMetricRow(
+    label: String,
+    value: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.72f),
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
 @Preview(showBackground = true, widthDp = 390, heightDp = 900)
 @Composable
 private fun RouteScreenPreview() {
@@ -688,6 +812,7 @@ private fun RouteScreenPreview() {
             onDestinationSelected = {},
             onDismissSearchMessage = {},
             onDismissRouteMessage = {},
+            onNavigateToDetails = {},
         )
     }
 }
