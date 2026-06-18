@@ -1,0 +1,5 @@
+fare_rule_id,line_id,ticket_type_id,currency,min_fare,max_fare,basis,effective_date
+MRT_PINK_ADULT,MRT_PINK,adult,THB,15.0,45.0,station_count_reference_table,
+MRT_PINK_SENIOR,MRT_PINK,senior,THB,8.0,23.0,station_count_reference_table,
+MRT_YELLOW_ADULT,MRT_YELLOW,adult,THB,15.0,45.0,station_count_reference_table,
+MRT_YELLOW_SENIOR,MRT_YELLOW,senior,THB,8.0,23.0,station_count_reference_table,

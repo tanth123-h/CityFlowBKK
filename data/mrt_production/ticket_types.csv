@@ -1,0 +1,3 @@
+ticket_type_id,ticket_type_name,discount_percent
+adult,Adult / General,0.0
+senior,Senior,50.0

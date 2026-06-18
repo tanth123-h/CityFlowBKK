@@ -28,7 +28,6 @@ enum class HomeIcon {
     Map,
     Station,
     Profile,
-    Warning,
 }
 
 @Composable
@@ -153,18 +152,6 @@ fun HomeIconGraphic(
                     quadraticTo(size.width * 0.5f, size.height * 0.56f, size.width * 0.82f, size.height * 0.86f)
                 }
                 drawPath(shoulders, tint, style = stroke)
-            }
-
-            HomeIcon.Warning -> {
-                val triangle = Path().apply {
-                    moveTo(size.width * 0.5f, size.height * 0.12f)
-                    lineTo(size.width * 0.9f, size.height * 0.82f)
-                    lineTo(size.width * 0.1f, size.height * 0.82f)
-                    close()
-                }
-                drawPath(triangle, tint, style = stroke)
-                drawLine(tint, point(0.5f, 0.34f), point(0.5f, 0.58f), strokeWidth = stroke.width, cap = StrokeCap.Round)
-                drawCircle(tint, radius = size.minDimension * 0.04f, center = point(0.5f, 0.68f))
             }
         }
     }

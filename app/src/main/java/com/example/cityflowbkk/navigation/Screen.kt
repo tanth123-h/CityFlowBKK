@@ -6,4 +6,9 @@ sealed class Screen(val route: String) {
     data object Map : Screen("map")
     data object Station : Screen("station")
     data object Profile : Screen("profile")
+    data object RouteDetails : Screen("route_details/{routeDetailsId}") {
+        fun createRoute(routeDetailsId: String): String {
+            return "route_details/$routeDetailsId"
+        }
+    }
 }

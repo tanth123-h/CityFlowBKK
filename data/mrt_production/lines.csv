@@ -1,0 +1,6 @@
+line_id,line_name,operator_id,system,color_name,color_hex,route_length_km,station_count_declared,end_to_end_min
+BTS_SUKHUMVIT,BTS Sukhumvit Line,BTSC,BTS,Light Green,#009C3B,54.25,47,75
+BTS_SILOM,BTS Silom Line,BTSC,BTS,Dark Green,#006400,14.0,14,25
+BTS_GOLD,BTS Gold Line,BTSC,BTS,Gold,#D4AF37,1.8,3,6
+MRT_YELLOW,MRT Yellow Line,EBM,MRT,Yellow,#FFD700,30.4,23,45
+MRT_PINK,MRT Pink Line,NBM,MRT,Pink,#FFC0CB,37.3,32,65
