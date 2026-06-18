@@ -5,7 +5,7 @@ import androidx.compose.runtime.Immutable
 @Immutable
 data class SavedPlaceDetailUiState(
     val isLoading: Boolean = false,
-    // name / photo / rating seeded instantly from AttractionUiModel cache
+    // Seeded instantly from AttractionUiModel cache
     val name: String = "",
     val category: String = "",
     val description: String = "",
@@ -15,11 +15,11 @@ data class SavedPlaceDetailUiState(
     val address: String? = null,
     val isOpenNow: Boolean? = null,
     val openingHours: List<String> = emptyList(),
-    // enriched by Place Details API
-    val phoneNumber: String? = null,
-    val website: String? = null,
+    // Rich fields — available immediately if AttractionUiModel was loaded from Places API
     val placeId: String? = null,
     val latitude: Double? = null,
     val longitude: Double? = null,
+    val website: String? = null,
+    val phoneNumber: String? = null,
     val errorMessage: String? = null
 )

@@ -13,5 +13,11 @@ data class AttractionUiModel(
     val userRatingsTotal: Int?,
     val address: String?,
     val openingHours: List<String>,
-    val isOpenNow: Boolean?
+    val isOpenNow: Boolean?,
+    // Rich fields populated from Places API — used in detail screen without a second call
+    val placeId: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val website: String? = null,
+    val phoneNumber: String? = null
 )

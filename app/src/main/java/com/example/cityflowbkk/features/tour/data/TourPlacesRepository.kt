@@ -5,6 +5,8 @@ import android.util.Log
 import com.example.cityflowbkk.data.places.PlacesRepository
 import com.example.cityflowbkk.data.places.model.GooglePlace
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 
@@ -14,160 +16,164 @@ class TourPlacesRepository(
 ) {
     private val tag = "TourPlacesRepo"
 
+    // ── Public API ────────────────────────────────────────────────────────────
+
     suspend fun loadAttractions(): List<AttractionUiModel> = withContext(Dispatchers.IO) {
         val seeds = loadSeedsFromJson()
-        Log.d(tag, "Loaded ${seeds.size} seeds from bangkok_landmarks.json")
-        val attractions = mutableListOf<AttractionUiModel>()
+        Log.d(tag, "Loaded ${seeds.size} seeds — fetching all in parallel")
 
-        for (seed in seeds) {
-            val attraction = fetchPlaceDetails(seed)
-            attractions.add(attraction)
-        }
+        // Fetch all 20 attractions concurrently instead of sequentially.
+        // Each coroutine is independent; failures fall back gracefully.
+        val attractions = seeds.map { seed ->
+            async { fetchAttraction(seed) }
+        }.awaitAll()
 
         Log.d(tag, "Finished loading ${attractions.size} attractions")
         attractions
     }
 
-    private fun loadSeedsFromJson(): List<LandmarkSeed> {
-        val jsonString = context.assets.open("bangkok_landmarks.json").bufferedReader().use { it.readText() }
-        val jsonArray = JSONArray(jsonString)
-        val seeds = mutableListOf<LandmarkSeed>()
+    // ── Private helpers ───────────────────────────────────────────────────────
 
-        for (i in 0 until jsonArray.length()) {
-            val obj = jsonArray.getJSONObject(i)
-            seeds.add(
-                LandmarkSeed(
-                    id = obj.getInt("id"),
-                    name = obj.getString("name"),
-                    description = obj.getString("description"),
-                    category = obj.getString("category")
+    private fun loadSeedsFromJson(): List<LandmarkSeed> {
+        val jsonString = context.assets.open("bangkok_landmarks.json")
+            .bufferedReader().use { it.readText() }
+        val jsonArray = JSONArray(jsonString)
+        return buildList {
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                add(
+                    LandmarkSeed(
+                        id = obj.getInt("id"),
+                        name = obj.getString("name"),
+                        description = obj.getString("description"),
+                        category = obj.getString("category")
+                    )
                 )
-            )
+            }
         }
-        return seeds
     }
 
-    private suspend fun fetchPlaceDetails(seed: LandmarkSeed): AttractionUiModel {
+    private suspend fun fetchAttraction(seed: LandmarkSeed): AttractionUiModel {
         val query = "${seed.name}, Bangkok, Thailand"
-        Log.d(tag, "─────────────────────────────────────────────")
         Log.d(tag, "Fetching: '${seed.name}' (id=${seed.id})")
-        Log.d(tag, "Query: '$query'")
-        Log.d(tag, "FieldMask: $PLACE_SEARCH_FIELD_MASK")
-        try {
+        return try {
             val places = placesRepository.searchPlace(
                 query = query,
                 fieldMask = PLACE_SEARCH_FIELD_MASK
             )
             if (places.isEmpty()) {
-                Log.w(tag, "⚠ No results for '${seed.name}' — using fallback")
-                return createFallbackAttraction(seed, "No places found")
+                Log.w(tag, "⚠ No results for '${seed.name}' — fallback")
+                fallback(seed)
+            } else {
+                val place = places[0]
+                logPlaceDebug(seed.name, place)
+                parseGooglePlace(seed, place)
             }
-
-            val place = places[0]
-            logPlaceDebug(seed.name, place)
-            return parseGooglePlace(seed, place)
         } catch (e: Exception) {
             Log.e(tag, "✗ Exception fetching '${seed.name}': ${e.message}", e)
-            return createFallbackAttraction(seed, e.message)
+            fallback(seed)
         }
-    }
-
-    private fun logPlaceDebug(name: String, place: GooglePlace) {
-        Log.d(tag, "── API result for '$name' ──")
-        Log.d(tag, "  Place ID        : ${place.id ?: "MISSING"}")
-        Log.d(tag, "  Display Name    : ${place.displayName?.text ?: "MISSING"}")
-        Log.d(tag, "  Rating          : ${place.rating ?: "MISSING (null)"}")
-        Log.d(tag, "  Review Count    : ${place.userRatingCount ?: "MISSING (null)"}")
-        Log.d(tag, "  Address         : ${place.formattedAddress ?: "MISSING (null)"}")
-
-        val openingHours = place.regularOpeningHours
-        if (openingHours == null) {
-            Log.w(tag, "  Opening Hours   : MISSING (null) — field may not be in response or API key lacks billing")
-        } else {
-            Log.d(tag, "  Open Now        : ${openingHours.openNow}")
-            Log.d(tag, "  Weekly Hours    : ${openingHours.weekdayDescriptions}")
-        }
-
-        val photos = place.photos
-        if (photos.isNullOrEmpty()) {
-            Log.w(tag, "  Photos          : MISSING — no photos returned. Check field mask includes 'photos'")
-        } else {
-            Log.d(tag, "  Photos count    : ${photos.size}")
-            photos.forEachIndexed { i, photo ->
-                Log.d(tag, "  Photo[$i] name  : ${photo.name}")
-                Log.d(tag, "  Photo[$i] size  : ${photo.widthPx}x${photo.heightPx}")
-            }
-            val firstPhotoName = photos.firstOrNull()?.name
-            if (firstPhotoName != null) {
-                val url = placesRepository.getPhotoUrl(firstPhotoName, 800)
-                Log.d(tag, "  Photo URL       : $url")
-            } else {
-                Log.w(tag, "  Photo URL       : SKIPPED — first photo has null name")
-            }
-        }
-
-        // Warn on missing fields
-        if (place.rating == null)
-            Log.w(tag, "  ⚠ rating is null — ensure 'places.rating' is in field mask AND API key has billing enabled")
-        if (place.userRatingCount == null)
-            Log.w(tag, "  ⚠ userRatingCount is null — ensure 'places.userRatingCount' is in field mask AND API key has billing enabled")
     }
 
     private fun parseGooglePlace(seed: LandmarkSeed, place: GooglePlace): AttractionUiModel {
-        val openingHoursJson = place.regularOpeningHours
-        val openingHours = openingHoursJson?.weekdayDescriptions ?: emptyList()
-
+        val hours = place.regularOpeningHours
         val photoName = place.photos?.firstOrNull()?.name?.takeIf { it.isNotBlank() }
-
-        val address = place.formattedAddress?.takeIf { it.isNotBlank() }
-        val rating = place.rating
-        val userRatingsTotal = place.userRatingCount
-        val isOpenNow = openingHoursJson?.openNow
-
         val photoUrl = photoName?.let { placesRepository.getPhotoUrl(it, 800) }
 
-        Log.d(tag, "Parsed '${seed.name}': rating=$rating, reviews=$userRatingsTotal, hasPhoto=${photoUrl != null}, address=$address, hours=${openingHours.size} entries")
+        Log.d(tag, "Parsed '${seed.name}': " +
+                "rating=${place.rating}, " +
+                "reviews=${place.userRatingCount}, " +
+                "hasPhoto=${photoUrl != null}, " +
+                "lat=${place.location?.latitude}, " +
+                "lng=${place.location?.longitude}")
+        Log.d(tag, "  Photo URL: $photoUrl")
 
         return AttractionUiModel(
             id = seed.id,
             name = seed.name,
-            description = seed.description,
+            // Prefer editorial summary from API; fall back to seed description
+            description = place.editorialSummary?.text
+                ?.takeIf { it.isNotBlank() } ?: seed.description,
             category = seed.category,
             photoUrl = photoUrl,
-            rating = rating,
-            userRatingsTotal = userRatingsTotal,
-            address = address,
-            openingHours = openingHours,
-            isOpenNow = isOpenNow
+            rating = place.rating,
+            userRatingsTotal = place.userRatingCount,
+            address = place.formattedAddress?.takeIf { it.isNotBlank() },
+            openingHours = hours?.weekdayDescriptions ?: emptyList(),
+            isOpenNow = hours?.openNow,
+            // Rich fields — no second API call needed in detail screen
+            placeId = place.id?.takeIf { it.isNotBlank() },
+            latitude = place.location?.latitude,
+            longitude = place.location?.longitude,
+            website = place.websiteUri?.takeIf { it.isNotBlank() },
+            phoneNumber = place.internationalPhoneNumber?.takeIf { it.isNotBlank() }
         )
     }
 
-    private fun createFallbackAttraction(seed: LandmarkSeed, exceptionMessage: String?): AttractionUiModel {
-        Log.d(tag, "Creating fallback for '${seed.name}' reason='$exceptionMessage'")
-        return AttractionUiModel(
-            id = seed.id,
-            name = seed.name,
-            description = seed.description,
-            category = seed.category,
-            photoUrl = null,
-            rating = null,
-            userRatingsTotal = null,
-            address = "Bangkok, Thailand",
-            openingHours = emptyList(),
-            isOpenNow = null
-        )
+    private fun fallback(seed: LandmarkSeed) = AttractionUiModel(
+        id = seed.id,
+        name = seed.name,
+        description = seed.description,
+        category = seed.category,
+        photoUrl = null,
+        rating = null,
+        userRatingsTotal = null,
+        address = "Bangkok, Thailand",
+        openingHours = emptyList(),
+        isOpenNow = null
+    )
+
+    private fun logPlaceDebug(name: String, place: GooglePlace) {
+        Log.d(tag, "── API result for '$name' ──────────────────")
+        Log.d(tag, "  Place ID        : ${place.id ?: "MISSING"}")
+        Log.d(tag, "  Display Name    : ${place.displayName?.text ?: "MISSING"}")
+        Log.d(tag, "  Rating          : ${place.rating ?: "MISSING"}")
+        Log.d(tag, "  Review Count    : ${place.userRatingCount ?: "MISSING"}")
+        Log.d(tag, "  Address         : ${place.formattedAddress ?: "MISSING"}")
+        Log.d(tag, "  Website         : ${place.websiteUri ?: "MISSING"}")
+        Log.d(tag, "  Phone           : ${place.internationalPhoneNumber ?: "MISSING"}")
+        Log.d(tag, "  Lat/Lng         : ${place.location?.latitude}/${place.location?.longitude}")
+        Log.d(tag, "  Editorial       : ${place.editorialSummary?.text ?: "MISSING"}")
+
+        val photos = place.photos
+        if (photos.isNullOrEmpty()) {
+            Log.w(tag, "  Photos          : NONE returned — check field mask / billing")
+        } else {
+            Log.d(tag, "  Photos count    : ${photos.size}")
+            val firstName = photos.firstOrNull()?.name
+            if (firstName != null) {
+                Log.d(tag, "  Photo[0] name   : $firstName")
+                Log.d(tag, "  Photo[0] URL    : ${placesRepository.getPhotoUrl(firstName, 800)}")
+            }
+        }
+
+        if (place.rating == null)
+            Log.w(tag, "  ⚠ rating null — ensure billing and Enterprise SKU enabled")
+        if (place.photos.isNullOrEmpty())
+            Log.w(tag, "  ⚠ photos null — ensure 'photos' is in field mask")
     }
 
     companion object {
-        private val placeDetailsFields = listOf(
+        /**
+         * All fields fetched in a single call.
+         * SKU tiers (for cost awareness):
+         *   Pro   : displayName, formattedAddress, photos, location
+         *   Enterprise: rating, userRatingCount, regularOpeningHours,
+         *               websiteUri, internationalPhoneNumber, editorialSummary
+         */
+        private val FIELDS = listOf(
             "id",
             "displayName",
+            "formattedAddress",
             "photos",
             "rating",
             "userRatingCount",
-            "formattedAddress",
-            "regularOpeningHours"
+            "regularOpeningHours",
+            "location",
+            "websiteUri",
+            "internationalPhoneNumber",
+            "editorialSummary"
         )
-        val PLACE_SEARCH_FIELD_MASK = placeDetailsFields.joinToString(",") { "places.$it" }
+        val PLACE_SEARCH_FIELD_MASK = FIELDS.joinToString(",") { "places.$it" }
     }
 }

@@ -21,7 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.example.cityflowbkk.R
 import com.example.cityflowbkk.features.tour.data.AttractionUiModel
 import com.example.cityflowbkk.ui.theme.CityFlowBlue

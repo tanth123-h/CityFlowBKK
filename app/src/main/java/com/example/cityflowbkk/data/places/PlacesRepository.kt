@@ -12,31 +12,37 @@ class PlacesRepository(
     private val tag = "PlacesRepository"
 
     suspend fun searchPlace(query: String, fieldMask: String): List<GooglePlace> {
-        Log.d(tag, "searchPlace started - Query: '$query', FieldMask: '$fieldMask'")
+        Log.d(tag, "searchPlace started - Query: '$query'")
+        Log.d(tag, "FieldMask: '$fieldMask'")
         try {
             val response = service.searchText(
                 apiKey = apiKey,
                 fieldMask = fieldMask,
                 request = PlaceSearchRequest(textQuery = query)
             )
-            Log.d(tag, "searchPlace API Response: $response")
-            val places = response.places ?: emptyList()
+            Log.d(tag, "searchPlace raw response object: $response")
+            val places = response.places
+            if (places == null) {
+                Log.e(tag, "⚠ response.places is NULL — Gson failed to deserialise 'places' array. Raw response: $response")
+                return emptyList()
+            }
             Log.d(tag, "searchPlace total results: ${places.size}")
-            
+
             for ((index, place) in places.withIndex()) {
                 Log.d(tag, "Result [$index]:")
                 Log.d(tag, "  - Place ID: ${place.id}")
                 Log.d(tag, "  - Place Name: ${place.displayName?.text}")
                 Log.d(tag, "  - Rating: ${place.rating}")
                 Log.d(tag, "  - Review Count: ${place.userRatingCount}")
+                Log.d(tag, "  - Photos: ${place.photos?.size ?: 0} returned")
                 Log.d(tag, "  - Photo Metadata: ${place.photos?.map { "Name: ${it.name}, Width: ${it.widthPx}, Height: ${it.heightPx}" }}")
-                
+
                 val firstPhotoName = place.photos?.firstOrNull()?.name
                 if (firstPhotoName != null) {
                     val url = getPhotoUrl(firstPhotoName, 800)
                     Log.d(tag, "  - Generated Photo URL: $url")
                 } else {
-                    Log.d(tag, "  - Generated Photo URL: None (No photos available)")
+                    Log.w(tag, "  - Generated Photo URL: NONE — photos list is ${if (place.photos == null) "null" else "empty"}")
                 }
             }
             return places

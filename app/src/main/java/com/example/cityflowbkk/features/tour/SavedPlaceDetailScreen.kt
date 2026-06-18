@@ -26,8 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import com.example.cityflowbkk.features.tour.data.AttractionUiModel
 import com.example.cityflowbkk.ui.theme.CityFlowBlue
 import com.example.cityflowbkk.ui.theme.CityFlowGreen
@@ -234,7 +234,6 @@ private fun HeroSection(uiState: SavedPlaceDetailUiState) {
             AsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(photoUrl)
-                    .crossfade(true)
                     .build(),
                 contentDescription = uiState.name,
                 modifier = Modifier.fillMaxSize(),
@@ -392,10 +391,8 @@ private fun MapPreviewCard(
                 .height(200.dp)
                 .clip(RoundedCornerShape(14.dp))
         ) {
-            GoogleMap(
-                modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraState,
-                uiSettings = MapUiSettings(
+            val mapUiSettings = remember {
+                MapUiSettings(
                     scrollGesturesEnabled = false,
                     zoomGesturesEnabled = false,
                     rotationGesturesEnabled = false,
@@ -404,11 +401,19 @@ private fun MapPreviewCard(
                     compassEnabled = false,
                     myLocationButtonEnabled = false,
                     mapToolbarEnabled = false
-                ),
-                properties = MapProperties(isMyLocationEnabled = false)
+                )
+            }
+            val mapProperties = remember { MapProperties(isMyLocationEnabled = false) }
+            val markerState = remember(position) { MarkerState(position = position) }
+
+            GoogleMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraState,
+                uiSettings = mapUiSettings,
+                properties = mapProperties
             ) {
                 Marker(
-                    state = MarkerState(position = position),
+                    state = markerState,
                     title = name,
                     snippet = address
                 )

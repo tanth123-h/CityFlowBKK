@@ -24,9 +24,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter
-import coil.request.ImageRequest
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import com.example.cityflowbkk.features.tour.data.AttractionUiModel
 import com.example.cityflowbkk.ui.theme.CityFlowBlue
 import com.example.cityflowbkk.ui.theme.CityFlowGreen
@@ -199,9 +198,8 @@ fun SwipeableCard(
             Box(modifier = Modifier.fillMaxSize()) {
                 // ── Image layer ──────────────────────────────────────────────
                 val context = LocalContext.current
-                var imageLoadState by remember(attraction.photoUrl) {
-                    mutableStateOf<AsyncImagePainter.State>(AsyncImagePainter.State.Loading(null))
-                }
+                var imageLoading by remember(attraction.photoUrl) { mutableStateOf(true) }
+                var imageError by remember(attraction.photoUrl) { mutableStateOf(false) }
 
                 if (attraction.photoUrl != null) {
                     Log.d("DiscoverScreen", "Loading image for '${attraction.name}' → ${attraction.photoUrl}")
@@ -209,7 +207,6 @@ fun SwipeableCard(
                     val imageRequest = remember(attraction.photoUrl) {
                         ImageRequest.Builder(context)
                             .data(attraction.photoUrl)
-                            .crossfade(true)
                             .build()
                     }
 
@@ -218,25 +215,21 @@ fun SwipeableCard(
                         contentDescription = attraction.name,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
-                        onLoading = { state ->
-                            imageLoadState = state
+                        onLoading = { imageLoading = true; imageError = false },
+                        onSuccess = {
+                            imageLoading = false
+                            imageError = false
+                            Log.d("DiscoverScreen", "Image loaded: '${attraction.name}'")
                         },
-                        onSuccess = { state ->
-                            imageLoadState = state
-                            Log.d("DiscoverScreen", "Image loaded successfully for '${attraction.name}'")
-                        },
-                        onError = { state ->
-                            imageLoadState = state
-                            Log.e(
-                                "DiscoverScreen",
-                                "Image load failed for '${attraction.name}' URL='${attraction.photoUrl}'",
-                                state.result.throwable
-                            )
+                        onError = {
+                            imageLoading = false
+                            imageError = true
+                            Log.e("DiscoverScreen", "Image failed: '${attraction.name}' url='${attraction.photoUrl}'")
                         }
                     )
 
                     // Show spinner while loading
-                    if (imageLoadState is AsyncImagePainter.State.Loading) {
+                    if (imageLoading) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -246,7 +239,7 @@ fun SwipeableCard(
                     }
 
                     // Show error placeholder if load failed
-                    if (imageLoadState is AsyncImagePainter.State.Error) {
+                    if (imageError) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()

@@ -16,12 +16,27 @@ data class GooglePlace(
     val rating: Double?,
     val userRatingCount: Int?,
     val regularOpeningHours: RegularOpeningHours?,
-    val photos: List<PlacePhoto>?
+    val photos: List<PlacePhoto>?,
+    // Extended fields for detail screen
+    val location: LatLng?,
+    val websiteUri: String?,
+    val internationalPhoneNumber: String?,
+    val editorialSummary: LocalizedText?
 )
 
 data class DisplayName(
     val text: String?,
     val languageCode: String?
+)
+
+data class LocalizedText(
+    val text: String?,
+    val languageCode: String?
+)
+
+data class LatLng(
+    val latitude: Double?,
+    val longitude: Double?
 )
 
 data class RegularOpeningHours(
