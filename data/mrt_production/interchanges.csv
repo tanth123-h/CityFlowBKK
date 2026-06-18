@@ -1,0 +1,5 @@
+interchange_id,station_id_a,station_id_b,is_valid_reference
+N17_PK16,N17,PK16,True
+G1_S7,S7,G1,True
+E15_YL23,YL23,E15,True
+PK01_PP11,PK01,PP11,False

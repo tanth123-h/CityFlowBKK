@@ -10,16 +10,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class PlaceDetailViewModel(
-    private val repository: PlaceDetailsRepository = PlaceDetailsRepository(BuildConfig.MAPS_API_KEY),
+    private val repository: PlaceDetailsRepository = PlaceDetailsRepository(BuildConfig.GOOGLE_MAPS_API_KEY),
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(PlaceDetailUiState())
     val uiState: StateFlow<PlaceDetailUiState> = _uiState.asStateFlow()
 
     fun loadPlace(place: PopularPlaceUiModel) {
-        if (BuildConfig.MAPS_API_KEY.isBlank()) {
+        if (BuildConfig.GOOGLE_MAPS_API_KEY.isBlank()) {
             _uiState.value = PlaceDetailUiState(
                 place = place.toFallbackPlaceDetail(),
-                errorMessage = "Missing Google Places API key. Add MAPS_API_KEY to local.properties.",
+                errorMessage = "Missing Google Places API key. Add GOOGLE_MAPS_API_KEY to local.properties.",
             )
             return
         }
