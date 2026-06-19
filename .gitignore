@@ -13,3 +13,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# API keys — never commit these
+gradle.properties
+keystore.properties
+*.jks
+*.keystore
