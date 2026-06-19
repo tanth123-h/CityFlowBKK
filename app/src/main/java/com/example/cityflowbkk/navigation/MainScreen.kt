@@ -15,7 +15,11 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cityflowbkk.features.common.PlaceholderScreen
+import com.example.cityflowbkk.features.tutorials.TutorialsMenuScreen
+import com.example.cityflowbkk.features.tutorials.TutorialsScreen
+import com.example.cityflowbkk.features.tutorials.TutorialContentSection
 import com.example.cityflowbkk.features.home.HomeScreen
+import com.example.cityflowbkk.features.home.QuickActionUiModel
 import com.example.cityflowbkk.features.route.RouteScreen
 import com.example.cityflowbkk.features.route.RouteDetailsScreen
 import com.example.cityflowbkk.features.route.RouteDetailsViewModel
@@ -74,6 +78,37 @@ fun MainScreen(
                             restoreState = true
                         }
                     },
+                    onQuickActionClick = { action ->
+                        when (action.title) {
+                            "Plan Route" -> {
+                                navController.navigate(Screen.Route.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                            "Tour" -> {
+                                navController.navigate(Screen.Map.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                            "Tutorial" -> {
+                                navController.navigate(Screen.Tutorial.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        }
+                    }
                 )
             }
             composable(Screen.Route.route) {
@@ -82,6 +117,9 @@ fun MainScreen(
                         navController.navigate(Screen.RouteDetails.createRoute(routeDetailsId))
                     },
                 )
+            }
+            composable(Screen.Map.route) {
+                PlaceholderScreen(title = "Map View", icon = HomeIcon.Map)
             }
             composable(
                 route = Screen.RouteDetails.route,
@@ -103,6 +141,25 @@ fun MainScreen(
             }
             composable(Screen.Profile.route) {
                 PlaceholderScreen(title = "Profile", icon = HomeIcon.Profile)
+            }
+            composable(Screen.Tutorial.route) {
+                TutorialsMenuScreen(
+                    onUsageClick = { navController.navigate(Screen.UsageTutorials.route) },
+                    onFareClick = { navController.navigate(Screen.FareTutorials.route) },
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.UsageTutorials.route) {
+                TutorialsScreen(
+                    section = TutorialContentSection.Usage,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.FareTutorials.route) {
+                TutorialsScreen(
+                    section = TutorialContentSection.Fare,
+                    onBackClick = { navController.popBackStack() }
+                )
             }
         }
     }
