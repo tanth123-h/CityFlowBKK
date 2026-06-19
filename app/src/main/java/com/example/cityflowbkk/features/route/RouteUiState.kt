@@ -82,6 +82,7 @@ enum class RouteSegmentType {
 
 data class TransitRouteDetailsUiModel(
     val lineName: String,
+    val routeType: String,
     val departureStation: String,
     val arrivalStation: String,
     val stationCount: Int,
@@ -90,6 +91,8 @@ data class TransitRouteDetailsUiModel(
     val btsFareText: String,
     val mrtFareText: String,
     val totalTransitFareText: String,
+    val hasBts: Boolean = false,
+    val hasMrt: Boolean = false,
     val btsOriginStation: String? = null,
     val btsDestinationStation: String? = null,
     val mrtOriginStation: String? = null,

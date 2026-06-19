@@ -726,23 +726,27 @@ private fun NavFareBreakdownCard(details: TransitRouteDetailsUiModel) {
                 )
             }
 
-            details.btsOriginStation?.let {
-                RouteMetricRow(label = "BTS from", value = it)
+            if (details.hasBts) {
+                details.btsOriginStation?.let {
+                    RouteMetricRow(label = "BTS from", value = it)
+                }
+                details.btsDestinationStation?.let {
+                    RouteMetricRow(label = "BTS to", value = it)
+                }
+                if (details.btsFareText != "Unavailable" && details.btsFareText != "฿0") {
+                    RouteMetricRow(label = "BTS fare", value = details.btsFareText)
+                }
             }
-            details.btsDestinationStation?.let {
-                RouteMetricRow(label = "BTS to", value = it)
-            }
-            if (details.btsFareText != "Unavailable" && details.btsFareText != "฿0") {
-                RouteMetricRow(label = "BTS fare", value = details.btsFareText)
-            }
-            details.mrtOriginStation?.let {
-                RouteMetricRow(label = "MRT from", value = it)
-            }
-            details.mrtDestinationStation?.let {
-                RouteMetricRow(label = "MRT to", value = it)
-            }
-            if (details.mrtFareText != "Unavailable" && details.mrtFareText != "฿0") {
-                RouteMetricRow(label = "MRT fare", value = details.mrtFareText)
+            if (details.hasMrt) {
+                details.mrtOriginStation?.let {
+                    RouteMetricRow(label = "MRT from", value = it)
+                }
+                details.mrtDestinationStation?.let {
+                    RouteMetricRow(label = "MRT to", value = it)
+                }
+                if (details.mrtFareText != "Unavailable" && details.mrtFareText != "฿0") {
+                    RouteMetricRow(label = "MRT fare", value = details.mrtFareText)
+                }
             }
             RouteMetricRow(label = "Total fare", value = details.totalTransitFareText)
         }
@@ -1881,17 +1885,22 @@ private fun TransitRouteDetailsCard(details: TransitRouteDetailsUiModel) {
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                RouteMetricRow(label = "Route type", value = details.routeType)
                 RouteMetricRow(label = "Departure station", value = details.departureStation)
-                RouteMetricRow(label = "Arrival station",   value = details.arrivalStation)
+                RouteMetricRow(label = "Arrival station", value = details.arrivalStation)
                 RouteMetricRow(label = "Number of stations", value = details.stationCount.toString())
-                RouteMetricRow(label = "Travel duration",   value = details.durationText)
-                RouteMetricRow(label = "Distance",          value = details.distanceText)
-                details.btsOriginStation?.let      { RouteMetricRow("BTS origin",      it) }
-                details.btsDestinationStation?.let { RouteMetricRow("BTS destination", it) }
-                details.mrtOriginStation?.let      { RouteMetricRow("MRT origin",      it) }
-                details.mrtDestinationStation?.let { RouteMetricRow("MRT destination", it) }
-                RouteMetricRow(label = "BTS fare",          value = details.btsFareText)
-                RouteMetricRow(label = "MRT fare",          value = details.mrtFareText)
+                RouteMetricRow(label = "Travel duration", value = details.durationText)
+                RouteMetricRow(label = "Distance", value = details.distanceText)
+                if (details.hasBts) {
+                    details.btsOriginStation?.let { RouteMetricRow("BTS origin", it) }
+                    details.btsDestinationStation?.let { RouteMetricRow("BTS destination", it) }
+                    RouteMetricRow(label = "BTS fare", value = details.btsFareText)
+                }
+                if (details.hasMrt) {
+                    details.mrtOriginStation?.let { RouteMetricRow("MRT origin", it) }
+                    details.mrtDestinationStation?.let { RouteMetricRow("MRT destination", it) }
+                    RouteMetricRow(label = "MRT fare", value = details.mrtFareText)
+                }
                 RouteMetricRow(label = "Total transit fare", value = details.totalTransitFareText)
             }
         }

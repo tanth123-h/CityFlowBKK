@@ -24,6 +24,7 @@ sealed class RouteTimelineItemUiModel {
     data class TransitSegment(
         val lineBadge: String,
         val lineName: String,
+        val transportTypeLabel: String,
         val departureStation: String,
         val arrivalStation: String,
         val stopCount: Int,

@@ -28,6 +28,12 @@ class RouteDetailsViewModel(
     }
 
     private fun RouteDetailsPayload.toUiState(): RouteDetailsUiState {
+        android.util.Log.d("FareDebug", "=== RouteDetailsPayload fare data ===")
+        android.util.Log.d("FareDebug", "BTS=${btsFareText}")
+        android.util.Log.d("FareDebug", "MRT=${mrtFareText}")
+        android.util.Log.d("FareDebug", "TOTAL=${totalFareText}")
+        android.util.Log.d("FareDebug", "Google fareText=${routeResult.fareText}")
+        
         val timelineItems = buildList {
             add(
                 RouteTimelineItemUiModel.Origin(
@@ -53,6 +59,7 @@ class RouteDetailsViewModel(
                                     ?: transit.lineName.takeIf { it.isNotBlank() }
                                     ?: "Transit",
                                 lineName = transit.lineName.ifBlank { transit.lineShortName ?: "Transit" },
+                                transportTypeLabel = FareRepository.detectTransitType(transit).label,
                                 departureStation = transit.departureStop,
                                 arrivalStation = transit.arrivalStop,
                                 stopCount = transit.numStops,
@@ -74,8 +81,20 @@ class RouteDetailsViewModel(
             )
         }
 
-        // Build a descriptive title when we know which stations were used
+        // Build a descriptive title from actual transit boarding/alighting stops.
+        val transitSegments = routeResult.segments.filter {
+            it.travelMode == TravelMode.TRANSIT && it.transitDetails != null
+        }
         val routeTitle = when {
+            transitSegments.isNotEmpty() -> {
+                val departure = transitSegments.first().transitDetails?.departureStop.orEmpty()
+                val arrival = transitSegments.last().transitDetails?.arrivalStop.orEmpty()
+                if (departure.isNotBlank() && arrival.isNotBlank()) {
+                    "$departure → $arrival"
+                } else {
+                    "Transit details"
+                }
+            }
             nearestOriginStationName != null && nearestDestinationStationName != null ->
                 "${nearestOriginStationName} → ${nearestDestinationStationName}"
             else -> "Transit details"
@@ -85,7 +104,7 @@ class RouteDetailsViewModel(
             routeTitle = routeTitle,
             totalDurationText = routeResult.route.durationText,
             totalDistanceText = routeResult.route.distanceText,
-            fareText = routeResult.fareText,
+            fareText = totalFareText ?: routeResult.fareText,
             timelineItems = timelineItems,
         )
     }

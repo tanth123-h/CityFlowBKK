@@ -25,4 +25,10 @@ data class RouteDetailsPayload(
     val nearestOriginStationName: String? = null,
     /** Name of the nearest BTS/MRT station to the destination, if station-first routing was used. */
     val nearestDestinationStationName: String? = null,
+    /** BTS fare calculated by FareRepository, not Google API */
+    val btsFareText: String? = null,
+    /** MRT fare calculated by FareRepository, not Google API */
+    val mrtFareText: String? = null,
+    /** Total transit fare calculated by FareRepository, not Google API */
+    val totalFareText: String? = null,
 )

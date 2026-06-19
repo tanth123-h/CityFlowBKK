@@ -73,6 +73,24 @@ object FareRepository {
         "sukhumvit",
         "silom",
         "gold line",
+        "airport rail link",
+        "arl",
+    )
+
+    // BTS station names for station-based classification fallback
+    private val btsStations = setOf(
+        "siam", "chit lom", "phloen chit", "nana", "asok", "phrom phong", "thong lo", "ekkamai",
+        "phra khanong", "on nut", "bang chak", "punnawithi", "udom suk", "bang na", "bearing",
+        "samrong", "pu chao", "chang erawan", "royal thai navy", "pak nam", "srinagarindra",
+        "phraek sa", "sai luat", "kheha",
+        "national stadium", "ratchathewi", "phaya thai", "victory monument", "sanam pao",
+        "ari", "mo chit", "ha yaek lat phrao", "phahon yothin 24", "ratchayothin", "sena ruam",
+        "saphan khwai", "kasetsart university", "ng wongwan", "bang sue", "tao poon",
+        "sala daeng", "chong nonsi", "surasak", "saphan taksin", "krung thonburi", "wongwian yai",
+        "pho nimit", "talat phlu", "wutthakat", "bang wa",
+        "krung thon buri", "charoen nakhon", "khlong san", "itsaraphap", "bang khun non",
+        "bang yi khan", "sirindhorn", "bang phlat", "bang o", "bang pho", "talat phlu",
+        "ratchapruek", "phasi charoen",
     )
 
     private val mrtKeywords = listOf(
@@ -107,8 +125,11 @@ object FareRepository {
         val btsSegments = mutableListOf<FareSegment>()
         val mrtSegments = mutableListOf<FareSegment>()
 
-        transitSegments.forEach { segment ->
-            val details = segment.transitDetails ?: return@forEach
+        android.util.Log.d("FareRepository", "=== calculateFareSummary START ===")
+        android.util.Log.d("FareRepository", "Total segments: ${segments.size}, Transit segments: ${transitSegments.size}")
+        
+        transitSegments.forEachIndexed { index, segment ->
+            val details = segment.transitDetails ?: return@forEachIndexed
             val fareSegment = FareSegment(
                 originStation = details.departureStop,
                 destinationStation = details.arrivalStop,
@@ -116,10 +137,23 @@ object FareRepository {
                 fare = calculateFare(details, details.numStops),
             )
 
-            when (detectTransitType(details)) {
-                TransitType.BTS -> btsSegments += fareSegment
-                TransitType.MRT -> mrtSegments += fareSegment
-                TransitType.UNKNOWN -> Unit
+            val type = detectTransitType(details)
+            android.util.Log.d("FareRepository", "Segment[$index]: ${details.departureStop} → ${details.arrivalStop}")
+            android.util.Log.d("FareRepository", "  Classified as: $type")
+            android.util.Log.d("FareRepository", "  Fare: ${fareSegment.fare}")
+            
+            when (type) {
+                TransitType.BTS -> {
+                    btsSegments += fareSegment
+                    android.util.Log.d("FareRepository", "  → Added to BTS segments")
+                }
+                TransitType.MRT -> {
+                    mrtSegments += fareSegment
+                    android.util.Log.d("FareRepository", "  → Added to MRT segments")
+                }
+                TransitType.UNKNOWN -> {
+                    android.util.Log.d("FareRepository", "  → UNKNOWN, not added to fare")
+                }
             }
         }
 
@@ -128,6 +162,14 @@ object FareRepository {
         val totalFare = listOfNotNull(btsFare, mrtFare)
             .takeIf { it.isNotEmpty() }
             ?.sum()
+
+        android.util.Log.d("FareRepository", "=== calculateFareSummary RESULT ===")
+        android.util.Log.d("FareRepository", "BTS segments count: ${btsSegments.size}, total fare: $btsFare")
+        android.util.Log.d("FareRepository", "MRT segments count: ${mrtSegments.size}, total fare: $mrtFare")
+        android.util.Log.d("FareRepository", "BTS origin: ${btsSegments.firstOrNull()?.originStation}")
+        android.util.Log.d("FareRepository", "BTS destination: ${btsSegments.lastOrNull()?.destinationStation}")
+        android.util.Log.d("FareRepository", "MRT origin: ${mrtSegments.firstOrNull()?.originStation}")
+        android.util.Log.d("FareRepository", "MRT destination: ${mrtSegments.lastOrNull()?.destinationStation}")
 
         return TransitFareSummary(
             btsFareBaht = btsFare,
@@ -141,30 +183,90 @@ object FareRepository {
     }
 
     fun detectTransitType(details: TransitDetails): TransitType {
-        // Step 1 — structured vehicle type (most reliable)
         val vehicleType = details.vehicleType?.uppercase(Locale.US).orEmpty()
-        when {
-            vehicleType in setOf("TRAM", "MONORAIL") -> return TransitType.BTS
-            vehicleType in setOf("HEAVY_RAIL", "SUBWAY", "METRO_RAIL") -> return TransitType.MRT
-            vehicleType == "BUS" -> return TransitType.UNKNOWN
+        val lineText = details.lineNameText()
+
+        android.util.Log.d("FareRepository", "=== detectTransitType DEBUG ===")
+        android.util.Log.d("FareRepository", "vehicleType: '$vehicleType'")
+        android.util.Log.d("FareRepository", "lineText: '$lineText'")
+        android.util.Log.d("FareRepository", "lineName: '${details.lineName}'")
+        android.util.Log.d("FareRepository", "lineShortName: '${details.lineShortName}'")
+        android.util.Log.d("FareRepository", "departureStop: '${details.departureStop}'")
+        android.util.Log.d("FareRepository", "arrivalStop: '${details.arrivalStop}'")
+        android.util.Log.d("FareRepository", "agencies: ${details.agencies}")
+        android.util.Log.d("FareRepository", "vehicleName: '${details.vehicleName}'")
+
+        // PRIORITY 1: Check station names first - most reliable for Bangkok
+        val departureStopLower = details.departureStop.lowercase(Locale.US)
+        val arrivalStopLower = details.arrivalStop.lowercase(Locale.US)
+        val stationMatch = btsStations.any { station ->
+            departureStopLower.contains(station) || arrivalStopLower.contains(station)
+        }
+        if (stationMatch) {
+            android.util.Log.d("FareRepository", "→ Classified as BTS (station name match)")
+            return TransitType.BTS
         }
 
-        // Step 2 — agency name (second most reliable)
+        // PRIORITY 2: BTS vehicle types and line names
+        // BTS: Google returns TRAM/MONORAIL for Skytrain, or the line name contains "BTS".
+        if (vehicleType in setOf("TRAM", "MONORAIL") || lineText.contains("bts")) {
+            android.util.Log.d("FareRepository", "→ Classified as BTS (TRAM/MONORAIL or lineText contains bts)")
+            return TransitType.BTS
+        }
+
+        // PRIORITY 3: MRT vehicle types and line names
+        // MRT: subway-class vehicles or line names that explicitly reference MRT.
+        if (vehicleType in setOf("HEAVY_RAIL", "SUBWAY", "METRO_RAIL") || lineText.contains("mrt")) {
+            android.util.Log.d("FareRepository", "→ Classified as MRT (HEAVY_RAIL/SUBWAY/METRO_RAIL or lineText contains mrt)")
+            return TransitType.MRT
+        }
+
+        // PRIORITY 4: Airport Rail Link
+        // Airport Rail Link — bucket with BTS for fare display.
+        if (vehicleType in setOf("COMMUTER_TRAIN", "RAIL")) {
+            android.util.Log.d("FareRepository", "→ Classified as BTS (ARL - COMMUTER_TRAIN/RAIL)")
+            return TransitType.BTS
+        }
+
+        if (vehicleType == "BUS") {
+            android.util.Log.d("FareRepository", "→ Classified as UNKNOWN (BUS)")
+            return TransitType.UNKNOWN
+        }
+
+        // PRIORITY 5: Agency matching
         val agencyText = details.agencies.joinToString(" ").lowercase(Locale.US)
+        android.util.Log.d("FareRepository", "agencyText: '$agencyText'")
         when {
             agencyText.contains("bts") ||
                 agencyText.contains("bangkok mass transit system") ||
-                agencyText.contains("krungthep thanakom") -> return TransitType.BTS
+                agencyText.contains("krungthep thanakom") ||
+                agencyText.contains("state railway") ||
+                agencyText.contains("srtet") ||
+                agencyText.contains("airport rail link") -> {
+                android.util.Log.d("FareRepository", "→ Classified as BTS (agency match)")
+                return TransitType.BTS
+            }
             agencyText.contains("mrta") ||
                 agencyText.contains("metropolitan rapid transit") ||
                 agencyText.contains("northern bangkok monorail") ||
-                agencyText.contains("eastern bangkok monorail") -> return TransitType.MRT
+                agencyText.contains("eastern bangkok monorail") -> {
+                android.util.Log.d("FareRepository", "→ Classified as MRT (agency match)")
+                return TransitType.MRT
+            }
         }
 
-        // Step 3 — fall back to keyword matching on line/stop names
+        // PRIORITY 6: Keyword matching in all text
         val searchableText = details.searchableText()
-        if (btsKeywords.any { searchableText.contains(it) }) return TransitType.BTS
-        if (mrtKeywords.any { searchableText.contains(it) }) return TransitType.MRT
+        android.util.Log.d("FareRepository", "searchableText: '$searchableText'")
+        if (btsKeywords.any { searchableText.contains(it) }) {
+            android.util.Log.d("FareRepository", "→ Classified as BTS (keyword match)")
+            return TransitType.BTS
+        }
+        if (mrtKeywords.any { searchableText.contains(it) }) {
+            android.util.Log.d("FareRepository", "→ Classified as MRT (keyword match)")
+            return TransitType.MRT
+        }
+        android.util.Log.d("FareRepository", "→ Classified as UNKNOWN (no match)")
         return TransitType.UNKNOWN
     }
 
@@ -205,6 +307,12 @@ object FareRepository {
             text.contains("blue") -> MrtLine.BLUE
             else -> MrtLine.UNKNOWN
         }
+    }
+
+    private fun TransitDetails.lineNameText(): String {
+        return listOfNotNull(lineName, lineShortName)
+            .joinToString(" ")
+            .lowercase(Locale.US)
     }
 
     private fun TransitDetails.searchableText(): String {

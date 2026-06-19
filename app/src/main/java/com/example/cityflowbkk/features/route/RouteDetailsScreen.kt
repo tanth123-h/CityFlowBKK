@@ -395,7 +395,7 @@ private fun TransitContent(item: RouteTimelineItemUiModel.TransitSegment) {
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
-            text = "${item.stopCount} stops",
+            text = "${item.transportTypeLabel} · ${item.stopCount} stops",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -438,6 +438,7 @@ private fun RouteDetailsPreview() {
                     RouteTimelineItemUiModel.TransitSegment(
                         lineBadge = "34 EV",
                         lineName = "Transit Line",
+                        transportTypeLabel = "Transit",
                         departureStation = "MBK Center",
                         arrivalStation = "Victory Monument",
                         stopCount = 5,

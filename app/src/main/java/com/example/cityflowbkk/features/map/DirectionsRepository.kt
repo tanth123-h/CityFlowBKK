@@ -505,30 +505,30 @@ class DirectionsRepository(
         // This is far more robust than text matching on localised line names.
         val vehicleType = details.vehicleType?.uppercase(Locale.US).orEmpty()
         val text = details.searchableText()
+        val lineText = details.lineNameText()
 
-        // Step 2 — for rail-type vehicles, narrow down to the specific Bangkok line
-        // using name/agency text. Vehicle type alone cannot distinguish BTS Sukhumvit
-        // from BTS Silom or MRT Blue from MRT Purple.
         val railResult = when {
-            // ---- BTS / Skytrain (Google returns TRAM or MONORAIL for BTS) ----
-            vehicleType in setOf("TRAM", "MONORAIL") || isBtsAgency(details) -> {
+            // BTS / Skytrain — TRAM/MONORAIL, BTS agency, or explicit BTS line name.
+            vehicleType in setOf("TRAM", "MONORAIL") ||
+                isBtsAgency(details) ||
+                lineText.contains("bts") -> {
                 classifyBtsLine(text)
             }
-            // ---- MRT / Metro (HEAVY_RAIL or SUBWAY) ----
-            vehicleType in setOf("HEAVY_RAIL", "SUBWAY", "METRO_RAIL") || isMrtAgency(details) -> {
+            // MRT / Metro — subway-class vehicles or explicit MRT line name.
+            vehicleType in setOf("HEAVY_RAIL", "SUBWAY", "METRO_RAIL") ||
+                isMrtAgency(details) ||
+                lineText.contains("mrt") -> {
                 classifyMrtLine(text)
             }
-            // ---- Airport Rail Link (COMMUTER_TRAIN) ----
-            vehicleType == "COMMUTER_TRAIN" || text.contains("airport rail link") ||
+            // Airport Rail Link (COMMUTER_TRAIN) — identified by line/agency, not station names.
+            vehicleType == "COMMUTER_TRAIN" || vehicleType == "RAIL" ||
+                text.contains("airport rail link") ||
                 text.contains("arl") || text.contains("suvarnabhumi") -> {
                 RouteTransportType.AIRPORT_RAIL_LINK
             }
-            // ---- Bus ----
             vehicleType == "BUS" || text.contains("bus") || text.contains("รถบัส") -> {
                 RouteTransportType.BUS
             }
-            // ---- Step 3 — vehicle type was absent or unrecognised: fall back to
-            //      pure name/agency text matching ----
             else -> classifyByText(text)
         }
         return railResult
@@ -579,6 +579,12 @@ class DirectionsRepository(
         text.contains("mrt") || text.contains("metro") || text.contains("subway") -> RouteTransportType.MRT_BLUE
         text.contains("bus") || text.contains("รถบัส") -> RouteTransportType.BUS
         else -> RouteTransportType.UNKNOWN_TRANSIT
+    }
+
+    private fun TransitDetails.lineNameText(): String {
+        return listOfNotNull(lineName, lineShortName)
+            .joinToString(" ")
+            .lowercase(Locale.US)
     }
 
     private fun TransitDetails.searchableText(): String {

@@ -451,6 +451,10 @@ class RouteViewModel(
                             Log.d(DIAG, "    num_stops      : ${td.numStops}")
                             Log.d(DIAG, "    transportType  : ${seg.transportType.diagColorName()}")
                             Log.d(DIAG, "    agencies       : ${td.agencies}")
+                            
+                            // IMMEDIATE classification test
+                            val detectedType = FareRepository.detectTransitType(td)
+                            Log.d(DIAG, "    *** FareRepository classified this as: $detectedType ***")
                         } else {
                             Log.w(DIAG, "  TRANSIT[$i] segment has null transitDetails")
                         }
@@ -479,15 +483,44 @@ class RouteViewModel(
                 val firstTransit = transitSegments.firstOrNull()
                 val lastTransit = transitSegments.lastOrNull()
                 val fareSummary = FareRepository.calculateFareSummary(transitRoute.segments)
+
+                Log.d(DIAG, "=== FARE SUMMARY DEBUG ===")
+                Log.d(DIAG, "BTS fare: ${fareSummary.btsFareBaht}")
+                Log.d(DIAG, "MRT fare: ${fareSummary.mrtFareBaht}")
+                Log.d(DIAG, "BTS origin: ${fareSummary.btsOriginStation}")
+                Log.d(DIAG, "BTS destination: ${fareSummary.btsDestinationStation}")
+                Log.d(DIAG, "MRT origin: ${fareSummary.mrtOriginStation}")
+                Log.d(DIAG, "MRT destination: ${fareSummary.mrtDestinationStation}")
+
                 val transitDetails = if (firstTransit != null && lastTransit != null) {
+                    val routeTypeLabel = when {
+                        fareSummary.hasBts && fareSummary.hasMrt -> "BTS + MRT"
+                        fareSummary.hasBts -> "BTS"
+                        fareSummary.hasMrt -> "MRT"
+                        else -> "Transit"
+                    }
+                    val departureStation = firstTransit.transitDetails?.departureStop.orEmpty()
+                    val arrivalStation = lastTransit.transitDetails?.arrivalStop.orEmpty()
+                    
+                    Log.d(DIAG, "=== TRANSIT DETAILS UI MODEL ===")
+                    Log.d(DIAG, "departureStation: '$departureStation'")
+                    Log.d(DIAG, "arrivalStation: '$arrivalStation'")
+                    Log.d(DIAG, "routeTypeLabel: '$routeTypeLabel'")
+                    Log.d(DIAG, "hasBts: ${fareSummary.hasBts}, hasMrt: ${fareSummary.hasMrt}")
+                    Log.d(DIAG, "btsOriginStation: '${fareSummary.btsOriginStation}'")
+                    Log.d(DIAG, "btsDestinationStation: '${fareSummary.btsDestinationStation}'")
+                    Log.d(DIAG, "mrtOriginStation: '${fareSummary.mrtOriginStation}'")
+                    Log.d(DIAG, "mrtDestinationStation: '${fareSummary.mrtDestinationStation}'")
+                    
                     TransitRouteDetailsUiModel(
                         lineName = transitSegments.joinToString(" / ") {
                             it.transitDetails?.lineShortName
                                 ?: it.transitDetails?.lineName
                                 ?: "Transit"
                         },
-                        departureStation = firstTransit.transitDetails?.departureStop.orEmpty(),
-                        arrivalStation = lastTransit.transitDetails?.arrivalStop.orEmpty(),
+                        routeType = routeTypeLabel,
+                        departureStation = departureStation,
+                        arrivalStation = arrivalStation,
                         stationCount = transitSegments.sumOf { it.transitDetails?.numStops ?: 0 },
                         durationText = transitSegments.sumOf { it.durationSeconds }
                             .toDurationText()
@@ -496,6 +529,8 @@ class RouteViewModel(
                         btsFareText = fareSummary.btsFareBaht.toFareAmountText(),
                         mrtFareText = fareSummary.mrtFareBaht.toFareAmountText(),
                         totalTransitFareText = fareSummary.totalFareBaht.toFareAmountText(),
+                        hasBts = fareSummary.hasBts,
+                        hasMrt = fareSummary.hasMrt,
                         btsOriginStation = fareSummary.btsOriginStation,
                         btsDestinationStation = fareSummary.btsDestinationStation,
                         mrtOriginStation = fareSummary.mrtOriginStation,
@@ -511,6 +546,9 @@ class RouteViewModel(
                         routeResult = transitRoute,
                         nearestOriginStationName = stationPair?.originStation?.name,
                         nearestDestinationStationName = stationPair?.destinationStation?.name,
+                        btsFareText = transitDetails?.btsFareText,
+                        mrtFareText = transitDetails?.mrtFareText,
+                        totalFareText = transitDetails?.totalTransitFareText,
                     ),
                 )
 
