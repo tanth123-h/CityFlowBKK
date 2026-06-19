@@ -22,6 +22,11 @@ tindersuper
 import com.example.cityflowbkk.features.common.PlaceholderScreen
 import com.example.cityflowbkk.features.home.HomeScreen
 import com.example.cityflowbkk.features.map.MapScreen
+tutorials
+import com.example.cityflowbkk.features.tutorials.TutorialContentSection
+import com.example.cityflowbkk.features.tutorials.TutorialsMenuScreen
+import com.example.cityflowbkk.features.tutorials.TutorialsScreen
+
 import com.example.cityflowbkk.features.tour.DiscoverBangkokScreen
 import com.example.cityflowbkk.features.tour.DiscoverViewModel
 import com.example.cityflowbkk.features.tour.SavedPlaceDetailScreen
@@ -32,6 +37,7 @@ import com.example.cityflowbkk.features.home.HomeScreen
 import com.example.cityflowbkk.features.route.RouteScreen
 import com.example.cityflowbkk.features.route.RouteDetailsScreen
 import com.example.cityflowbkk.features.route.RouteDetailsViewModel
+ master
  master
 import com.example.cityflowbkk.ui.icons.HomeIcon
 import com.example.cityflowbkk.ui.navigation.CityFlowBottomBar
@@ -94,6 +100,39 @@ fun MainScreen(
         ) {
             composable(Screen.Home.route) {
                 HomeScreen(
+tutorials
+                    onQuickActionClick = { action ->
+                        when (action.title) {
+                            "Tutorial" -> navController.navigate(Screen.TutorialsMenu.route)
+                            "Tour" -> navController.navigate(Screen.Route.route) // Temporary placeholder
+                            "Plan Route" -> navController.navigate(Screen.Route.route)
+                        }
+                    },
+                    onPlanRouteClick = {
+                        navController.navigate(Screen.Route.route)
+                    }
+                )
+            }
+            composable(Screen.Map.route) {
+                MapScreen()
+            }
+            composable(Screen.TutorialsMenu.route) {
+                TutorialsMenuScreen(
+                    onUsageClick = { navController.navigate(Screen.UsageTutorials.route) },
+                    onFareClick = { navController.navigate(Screen.FareTutorials.route) },
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.UsageTutorials.route) {
+                TutorialsScreen(
+                    section = TutorialContentSection.Usage,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.FareTutorials.route) {
+                TutorialsScreen(
+                    section = TutorialContentSection.Fare,
+                    onBackClick = { navController.popBackStack() }
 tindersuper
                     onTourClick = { navController.navigate(Screen.DiscoverBangkok.route) }
 
@@ -107,6 +146,7 @@ tindersuper
                         }
                     },
  master
+master
                 )
             }
             composable(Screen.Route.route) {
