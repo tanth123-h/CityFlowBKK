@@ -8,7 +8,7 @@ CityFlowBKK is an open-source Android application that helps residents, workers,
 
 ## Screenshots
 
-<img width="1080" height="2340" alt="Screenshot_20260619_144806_CityFlowBKK" src="https://github.com/user-attachments/assets/f85645d2-62bb-4f78-9fd3-f2cfed04b2d9" />
+<img width="400" height="700" alt="Screenshot_20260619_144806_CityFlowBKK" src="https://github.com/user-attachments/assets/f85645d2-62bb-4f78-9fd3-f2cfed04b2d9" />
 
 
 
