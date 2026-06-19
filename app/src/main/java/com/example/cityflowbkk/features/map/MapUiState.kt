@@ -8,6 +8,7 @@ data class MapUiState(
     val suggestions: List<PlaceSuggestionUiModel> = emptyList(),
     val isSearching: Boolean = false,
     val selectedPlace: MapPlaceUiModel? = null,
+    val droppedPin: DroppedPinUiModel? = null,
     val currentLocation: MapLatLng? = null,
     val route: RouteUiModel? = null,
     val routePoints: List<MapLatLng> = emptyList(),
@@ -33,6 +34,15 @@ data class TappedMarker(
     val id: String,
     val x: Float,  // Normalized 0-1 relative to image
     val y: Float,  // Normalized 0-1 relative to image
+)
+
+@Immutable
+data class DroppedPinUiModel(
+    val latitude: Double,
+    val longitude: Double,
+    val placeName: String,
+    val address: String?,
+    val isLoadingDetails: Boolean = false,
 )
 
 @Immutable
@@ -64,6 +74,22 @@ data class RouteUiModel(
     val durationText: String,
     val durationSeconds: Int,
     val arrivalTimeText: String,
+)
+
+@Immutable
+data class NavigationStepUiModel(
+    val index: Int = 0,
+    val instruction: String,
+    val distanceText: String,
+    val distanceMeters: Int,
+    val durationText: String,
+    val durationSeconds: Int,
+    val startLocation: MapLatLng,
+    val endLocation: MapLatLng,
+    val points: List<MapLatLng> = emptyList(),
+    val travelMode: TravelMode = TravelMode.WALKING,
+    val transportType: RouteTransportType = RouteTransportType.WALKING,
+    val transitDetails: TransitDetails? = null,
 )
 
 const val BANGKOK_LATITUDE = 13.7563

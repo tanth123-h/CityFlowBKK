@@ -16,8 +16,8 @@ import java.util.UUID
 class MapViewModel(
     application: Application,
 ) : AndroidViewModel(application) {
-    private val searchRepository = MapSearchRepository(BuildConfig.MAPS_API_KEY)
-    private val directionsRepository = DirectionsRepository(BuildConfig.MAPS_API_KEY)
+    private val searchRepository = MapSearchRepository(BuildConfig.GOOGLE_MAPS_API_KEY)
+    private val directionsRepository = DirectionsRepository(BuildConfig.GOOGLE_MAPS_API_KEY)
     private val locationRepository = LocationRepository(application.applicationContext)
 
     private val _uiState = MutableStateFlow(MapUiState())
@@ -25,6 +25,7 @@ class MapViewModel(
 
     private var searchJob: Job? = null
     private var routeJob: Job? = null
+    private var droppedPinJob: Job? = null
 
     init {
         refreshLocationPermissionState()
@@ -94,6 +95,67 @@ class MapViewModel(
                 }
             }
         }
+    }
+
+    fun onMapClick(location: MapLatLng) {
+        droppedPinJob?.cancel()
+        routeJob?.cancel()
+        _uiState.update {
+            it.copy(
+                droppedPin = DroppedPinUiModel(
+                    latitude = location.latitude,
+                    longitude = location.longitude,
+                    placeName = "Dropped pin",
+                    address = null,
+                    isLoadingDetails = true,
+                ),
+                selectedPlace = null,
+                route = null,
+                routePoints = emptyList(),
+                suggestions = emptyList(),
+                isSearching = false,
+                errorMessage = null,
+            )
+        }
+
+        droppedPinJob = viewModelScope.launch {
+            try {
+                val place = searchRepository.reverseGeocode(location)
+                _uiState.update {
+                    it.copy(
+                        droppedPin = DroppedPinUiModel(
+                            latitude = place.latitude,
+                            longitude = place.longitude,
+                            placeName = place.name,
+                            address = place.address,
+                            isLoadingDetails = false,
+                        ),
+                    )
+                }
+            } catch (exception: Exception) {
+                _uiState.update {
+                    it.copy(
+                        droppedPin = it.droppedPin?.copy(isLoadingDetails = false),
+                        errorMessage = exception.message ?: "Could not load this location address.",
+                    )
+                }
+            }
+        }
+    }
+
+    fun setDroppedPinAsDestination() {
+        val droppedPin = _uiState.value.droppedPin ?: return
+        viewModelScope.launch {
+            selectDestination(droppedPin.toPlace())
+        }
+    }
+
+    fun navigateToDroppedPin() {
+        setDroppedPinAsDestination()
+    }
+
+    fun calculateRouteToDroppedPin() {
+        setDroppedPinAsDestination()
     }
 
     fun clearSearch() {
@@ -215,6 +277,16 @@ class MapViewModel(
                 it.copy(errorMessage = "Enable location to calculate a route from your current position.")
             }
         }
+    }
+
+    private fun DroppedPinUiModel.toPlace(): MapPlaceUiModel {
+        return MapPlaceUiModel(
+            placeId = "dropped:$latitude,$longitude",
+            name = placeName,
+            address = address,
+            latitude = latitude,
+            longitude = longitude,
+        )
     }
 
     private fun calculateRoute(origin: MapLatLng, destination: MapPlaceUiModel) {

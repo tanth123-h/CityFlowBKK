@@ -1,12 +1,19 @@
 package com.example.cityflowbkk.features.map
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -51,6 +58,35 @@ class LocationRepository(
                 .addOnFailureListener {
                     continuation.resume(null)
                 }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun locationUpdates(
+        intervalMillis: Long = 3_000L,
+    ): Flow<MapLatLng> = callbackFlow {
+        if (!hasLocationPermission()) {
+            close()
+            return@callbackFlow
+        }
+
+        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, intervalMillis)
+            .setMinUpdateIntervalMillis(1_500L)
+            .setMinUpdateDistanceMeters(8f)
+            .build()
+        val callback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                result.lastLocation?.let { location ->
+                    trySend(MapLatLng(location.latitude, location.longitude))
+                }
+            }
+        }
+
+        fusedLocationClient.requestLocationUpdates(request, callback, context.mainLooper)
+            .addOnFailureListener { close(it) }
+
+        awaitClose {
+            fusedLocationClient.removeLocationUpdates(callback)
         }
     }
 }
