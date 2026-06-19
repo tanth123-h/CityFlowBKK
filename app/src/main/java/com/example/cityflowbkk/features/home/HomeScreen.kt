@@ -37,6 +37,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -76,7 +77,10 @@ import com.example.cityflowbkk.ui.theme.CityFlowBKKTheme
 import com.example.cityflowbkk.ui.theme.CityFlowBlue
 import com.example.cityflowbkk.ui.theme.CityFlowGreen
 import com.example.cityflowbkk.ui.theme.CityFlowOrange
+Myheero
+=======
 import java.util.Calendar
+master
 
 @Immutable
 data class HomeUiState(
@@ -108,6 +112,12 @@ data class PopularPlaceUiModel(
 fun HomeScreen(
     uiState: HomeUiState = HomeUiState(),
     onPlanRouteClick: () -> Unit = {},
+Myheero
+    onNavigateToMap: () -> Unit = {},
+    onNavigateToBtsMap: () -> Unit = {},
+    onNavigateToStationMapping: () -> Unit = {},
+=======
+master
     onQuickActionClick: (QuickActionUiModel) -> Unit = {},
     onTourClick: () -> Unit = {},
     placeDetailViewModel: PlaceDetailViewModel = viewModel(),
@@ -124,10 +134,39 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            CityFlowTopAppBar()
+            CityFlowTopAppBar(onMappingToolClick = onNavigateToStationMapping)
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
+Myheero
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(top = 16.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(22.dp),
+        ) {
+            HeroCard(onPlanRouteClick = onPlanRouteClick)
+            BtsMapBannerButton(onClick = onNavigateToBtsMap)
+            QuickActionsGrid(
+                quickActions = uiState.quickActions,
+                onQuickActionClick = { action ->
+                    when (action.title) {
+                        "Plan Route", "Smart Search" -> onNavigateToMap()
+                        else -> onQuickActionClick(action)
+                    }
+                },
+            )
+            PopularPlacesSection(
+                places = uiState.popularPlaces,
+                onPlaceClick = { place ->
+                    selectedPopularPlace = place
+                    placeDetailViewModel.loadPlace(place)
+                },
+            )
+=======
         Box(modifier = Modifier.fillMaxSize()) {
             BackgroundDecorations()
 
@@ -176,6 +215,7 @@ fun HomeScreen(
                     },
                 )
             }
+master
         }
     }
 
@@ -218,7 +258,7 @@ private fun BackgroundDecorations() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CityFlowTopAppBar() {
+private fun CityFlowTopAppBar(onMappingToolClick: () -> Unit = {}) {
     TopAppBar(
         modifier = Modifier.statusBarsPadding(),
         title = {
@@ -243,7 +283,14 @@ private fun CityFlowTopAppBar() {
             }
         },
         actions = {
+Myheero
+            TextButton(onClick = onMappingToolClick) {
+                Text("Mapping Tool", style = MaterialTheme.typography.labelMedium)
+            }
+            Box {
+=======
             Box(modifier = Modifier.padding(end = 8.dp)) {
+master
                 IconButton(onClick = { }) {
                     HomeIconGraphic(
                         icon = HomeIcon.Notification,
@@ -439,6 +486,61 @@ private fun HeroCard(
                     Text("Plan Route", fontWeight = FontWeight.Bold)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun BtsMapBannerButton(onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(90.dp)
+            .clickable(role = Role.Button, onClick = onClick),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(CircleShape)
+                    .background(CityFlowGreen.copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                HomeIconGraphic(
+                    icon = HomeIcon.Train,
+                    contentDescription = null,
+                    tint = CityFlowGreen,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "BTS Skytrain Map",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+                Text(
+                    text = "Interactive network map",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                )
+            }
+            HomeIconGraphic(
+                icon = HomeIcon.Map,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f),
+                modifier = Modifier.size(24.dp),
+            )
         }
     }
 }

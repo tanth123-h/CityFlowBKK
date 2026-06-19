@@ -4,10 +4,17 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
+Myheero
+        <DropdownSelection timestamp="2026-06-17T19:08:40.257933200Z">
+          <Target type="DEFAULT_BOOT">
+            <handle>
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=R5CX90G516X" />
+
         <DropdownSelection timestamp="2026-06-16T14:55:52.462448200Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\tankh\.android\avd\Pixel_9.avd" />
+ master
             </handle>
           </Target>
         </DropdownSelection>

@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 class MapViewModel(
     application: Application,
@@ -197,6 +198,62 @@ class MapViewModel(
     fun dismissError() {
         _uiState.update { it.copy(errorMessage = null) }
     }
+
+    // ── Station Coordinate Collection ────────────────────────────────────
+    
+    /**
+     * Called when user taps on the BTS map image.
+     * @param x Normalized coordinate [0-1] relative to image width
+     * @param y Normalized coordinate [0-1] relative to image height
+     */
+    fun onMapTapped(x: Float, y: Float) {
+        val marker = TappedMarker(
+            id = UUID.randomUUID().toString(),
+            x = x,
+            y = y,
+        )
+        _uiState.update {
+            it.copy(
+                tappedMarkers = it.tappedMarkers + marker,
+                lastTapX = x,
+                lastTapY = y,
+            )
+        }
+    }
+
+    fun clearAllMarkers() {
+        _uiState.update {
+            it.copy(
+                tappedMarkers = emptyList(),
+                lastTapX = null,
+                lastTapY = null,
+            )
+        }
+    }
+
+    // ── Map Zoom Controls ─────────────────────────────────────────────────
+    
+    /**
+     * Increase zoom by 20% per click, clamped to MAX_MAP_ZOOM (5x).
+     */
+    fun onZoomIn() {
+        _uiState.update {
+            val newZoom = (it.mapZoom + ZOOM_STEP).coerceIn(MIN_MAP_ZOOM, MAX_MAP_ZOOM)
+            it.copy(mapZoom = newZoom)
+        }
+    }
+
+    /**
+     * Decrease zoom by 20% per click, clamped to MIN_MAP_ZOOM (1x).
+     */
+    fun onZoomOut() {
+        _uiState.update {
+            val newZoom = (it.mapZoom - ZOOM_STEP).coerceIn(MIN_MAP_ZOOM, MAX_MAP_ZOOM)
+            it.copy(mapZoom = newZoom)
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
 
     private suspend fun selectDestination(place: MapPlaceUiModel) {
         _uiState.update {

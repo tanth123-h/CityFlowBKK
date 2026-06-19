@@ -6,6 +6,10 @@ sealed class Screen(val route: String) {
     data object Map : Screen("map")
     data object Station : Screen("station")
     data object Profile : Screen("profile")
+ Myheero
+    data object BtsMap : Screen("bts_map")
+    data object StationMapping : Screen("station_mapping")
+=======
  tindersuper
     data object DiscoverBangkok : Screen("discover_bangkok")
     data object SavedPlaces : Screen("saved_places")
@@ -19,4 +23,5 @@ sealed class Screen(val route: String) {
         }
  master
     }
+ master
 }
