@@ -1,0 +1,4 @@
+payment_method_id,payment_method_name,notes
+rabbit_card,Rabbit Card,Accepted across BTS Group lines per input document.
+emv_contactless,EMV Contactless,Input states EMV contactless is supported at MRT Yellow and Pink line gates.
+single_journey_token,Single Journey Token,"Input states BTS Sukhumvit, Silom, and Gold require Rabbit Card or physical single-journey token."

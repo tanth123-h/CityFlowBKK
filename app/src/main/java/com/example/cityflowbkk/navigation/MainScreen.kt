@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,6 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+tindersuper
 import com.example.cityflowbkk.features.common.PlaceholderScreen
 import com.example.cityflowbkk.features.home.HomeScreen
 import com.example.cityflowbkk.features.map.MapScreen
@@ -24,15 +26,26 @@ import com.example.cityflowbkk.features.tour.DiscoverBangkokScreen
 import com.example.cityflowbkk.features.tour.DiscoverViewModel
 import com.example.cityflowbkk.features.tour.SavedPlaceDetailScreen
 import com.example.cityflowbkk.features.tour.SavedPlacesScreen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.cityflowbkk.features.common.PlaceholderScreen
+import com.example.cityflowbkk.features.home.HomeScreen
+import com.example.cityflowbkk.features.route.RouteScreen
+import com.example.cityflowbkk.features.route.RouteDetailsScreen
+import com.example.cityflowbkk.features.route.RouteDetailsViewModel
+ master
 import com.example.cityflowbkk.ui.icons.HomeIcon
 import com.example.cityflowbkk.ui.navigation.CityFlowBottomBar
 
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    requestedStartRoute: String? = null,
+    routeRequestVersion: Int = 0,
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+ tindersuper
     val discoverViewModel: DiscoverViewModel = viewModel()
 
     // Hide bottom bar on these full-screen routes
@@ -43,6 +56,17 @@ fun MainScreen() {
     )
     val shouldShowBottomBar = noBottomBarRoutes.none { pattern ->
         currentRoute?.startsWith(pattern.substringBefore("{")) == true
+
+    LaunchedEffect(routeRequestVersion, requestedStartRoute) {
+        val route = requestedStartRoute ?: return@LaunchedEffect
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
+        }
+ master
     }
 
     Scaffold(
@@ -70,11 +94,42 @@ fun MainScreen() {
         ) {
             composable(Screen.Home.route) {
                 HomeScreen(
+tindersuper
                     onTourClick = { navController.navigate(Screen.DiscoverBangkok.route) }
+
+                    onPlanRouteClick = {
+                        navController.navigate(Screen.Route.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+ master
                 )
             }
             composable(Screen.Route.route) {
-                PlaceholderScreen(title = "Routes", icon = HomeIcon.Route)
+                RouteScreen(
+                    onNavigateToDetails = { routeDetailsId ->
+                        navController.navigate(Screen.RouteDetails.createRoute(routeDetailsId))
+                    },
+                )
+            }
+            composable(
+                route = Screen.RouteDetails.route,
+                arguments = listOf(
+                    navArgument("routeDetailsId") { type = NavType.StringType },
+                ),
+            ) {
+                // viewModel() here uses the NavBackStackEntry as the ViewModelStoreOwner and
+                // automatically supplies the framework-managed SavedStateHandle via CreationExtras,
+                // so RouteDetailsViewModel receives the correct SavedStateHandle populated by
+                // the Navigation argument bundle — no manual construction needed.
+                RouteDetailsScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    viewModel = viewModel(),
+                )
             }
             composable(Screen.Station.route) {
                 PlaceholderScreen(title = "Stations", icon = HomeIcon.Station)

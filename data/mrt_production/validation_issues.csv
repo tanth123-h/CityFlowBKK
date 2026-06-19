@@ -1,0 +1,96 @@
+severity,table_name,record_id,field_name,message
+warning,stations,PK02,station_name_en,English station name not present in source; left null.
+warning,stations,PK02,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK03,station_name_en,English station name not present in source; left null.
+warning,stations,PK03,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK04,station_name_en,English station name not present in source; left null.
+warning,stations,PK04,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK05,station_name_en,English station name not present in source; left null.
+warning,stations,PK05,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK06,station_name_en,English station name not present in source; left null.
+warning,stations,PK06,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK07,station_name_en,English station name not present in source; left null.
+warning,stations,PK07,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK08,station_name_en,English station name not present in source; left null.
+warning,stations,PK08,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK09,station_name_en,English station name not present in source; left null.
+warning,stations,PK09,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK10,station_name_en,English station name not present in source; left null.
+warning,stations,PK10,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK11,station_name_en,English station name not present in source; left null.
+warning,stations,PK11,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK12,station_name_en,English station name not present in source; left null.
+warning,stations,PK12,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK13,station_name_en,English station name not present in source; left null.
+warning,stations,PK13,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK14,station_name_en,English station name not present in source; left null.
+warning,stations,PK14,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK15,station_name_en,English station name not present in source; left null.
+warning,stations,PK15,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK17,station_name_en,English station name not present in source; left null.
+warning,stations,PK17,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK18,station_name_en,English station name not present in source; left null.
+warning,stations,PK18,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK19,station_name_en,English station name not present in source; left null.
+warning,stations,PK19,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK20,station_name_en,English station name not present in source; left null.
+warning,stations,PK20,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK21,station_name_en,English station name not present in source; left null.
+warning,stations,PK21,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK22,station_name_en,English station name not present in source; left null.
+warning,stations,PK22,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK23,station_name_en,English station name not present in source; left null.
+warning,stations,PK23,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK24,station_name_en,English station name not present in source; left null.
+warning,stations,PK24,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK25,station_name_en,English station name not present in source; left null.
+warning,stations,PK25,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK26,station_name_en,English station name not present in source; left null.
+warning,stations,PK26,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK27,station_name_en,English station name not present in source; left null.
+warning,stations,PK27,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK28,station_name_en,English station name not present in source; left null.
+warning,stations,PK28,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,PK29,station_name_en,English station name not present in source; left null.
+warning,stations,PK29,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL02,station_name_en,English station name not present in source; left null.
+warning,stations,YL02,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL03,station_name_en,English station name not present in source; left null.
+warning,stations,YL03,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL04,station_name_en,English station name not present in source; left null.
+warning,stations,YL04,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL05,station_name_en,English station name not present in source; left null.
+warning,stations,YL05,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL06,station_name_en,English station name not present in source; left null.
+warning,stations,YL06,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL07,station_name_en,English station name not present in source; left null.
+warning,stations,YL07,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL08,station_name_en,English station name not present in source; left null.
+warning,stations,YL08,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL09,station_name_en,English station name not present in source; left null.
+warning,stations,YL09,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL10,station_name_en,English station name not present in source; left null.
+warning,stations,YL10,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL11,station_name_en,English station name not present in source; left null.
+warning,stations,YL11,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL12,station_name_en,English station name not present in source; left null.
+warning,stations,YL12,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL13,station_name_en,English station name not present in source; left null.
+warning,stations,YL13,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL14,station_name_en,English station name not present in source; left null.
+warning,stations,YL14,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL15,station_name_en,English station name not present in source; left null.
+warning,stations,YL15,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL16,station_name_en,English station name not present in source; left null.
+warning,stations,YL16,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL18,station_name_en,English station name not present in source; left null.
+warning,stations,YL18,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL19,station_name_en,English station name not present in source; left null.
+warning,stations,YL19,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL20,station_name_en,English station name not present in source; left null.
+warning,stations,YL20,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL21,station_name_en,English station name not present in source; left null.
+warning,stations,YL21,latitude/longitude,Coordinates not present in source; left null.
+warning,stations,YL22,station_name_en,English station name not present in source; left null.
+warning,stations,YL22,latitude/longitude,Coordinates not present in source; left null.
+warning,interchanges,PK01_PP11,station_id,Interchange references a station not present in cleaned MRT station table; preserved for review.

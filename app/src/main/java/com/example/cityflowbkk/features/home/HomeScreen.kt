@@ -1,5 +1,7 @@
 package com.example.cityflowbkk.features.home
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -18,6 +20,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -72,11 +76,13 @@ import com.example.cityflowbkk.ui.theme.CityFlowBKKTheme
 import com.example.cityflowbkk.ui.theme.CityFlowBlue
 import com.example.cityflowbkk.ui.theme.CityFlowGreen
 import com.example.cityflowbkk.ui.theme.CityFlowOrange
+import java.util.Calendar
 
 @Immutable
 data class HomeUiState(
     val quickActions: List<QuickActionUiModel> = sampleQuickActions,
-    val popularPlaces: List<PopularPlaceUiModel> = samplePopularPlaces,
+    val places: List<BangkokPlace> = BangkokData.places,
+    val preferredCategory: Category = Category.FOODIE,
 )
 
 @Immutable
@@ -106,7 +112,14 @@ fun HomeScreen(
     onTourClick: () -> Unit = {},
     placeDetailViewModel: PlaceDetailViewModel = viewModel(),
 ) {
-    var selectedPopularPlace by remember { mutableStateOf<PopularPlaceUiModel?>(null) }
+    val recommendations = remember(uiState.places, uiState.preferredCategory) {
+        RecommendationEngine.recommend(
+            places = uiState.places,
+            preferredCategory = uiState.preferredCategory,
+        )
+    }
+    var selectedPlace by remember(recommendations) { mutableStateOf(recommendations.firstOrNull()) }
+    var detailPlace by remember { mutableStateOf<BangkokPlace?>(null) }
     val placeDetailUiState by placeDetailViewModel.uiState.collectAsState()
 
     Scaffold(
@@ -127,7 +140,15 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(32.dp),
             ) {
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
+                GreetingSection(modifier = Modifier.padding(horizontal = 24.dp))
+
+                TravelNoticeCard(
+                    notice = selectedPlace?.travelNotice
+                        ?: "Choose a destination to see practical BTS/MRT and neighborhood travel tips.",
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                )
+
                 HeroCard(
                     modifier = Modifier.padding(horizontal = 24.dp),
                     onPlanRouteClick = onPlanRouteClick
@@ -145,22 +166,24 @@ fun HomeScreen(
                     },
                 )
 
-                PopularPlacesSection(
-                    places = uiState.popularPlaces,
+                RecommendedDestinationsSection(
+                    places = recommendations,
+                    selectedPlace = selectedPlace,
                     onPlaceClick = { place ->
-                        selectedPopularPlace = place
-                        placeDetailViewModel.loadPlace(place)
+                        selectedPlace = place
+                        detailPlace = place
+                        placeDetailViewModel.loadPlace(place.toPopularPlaceUiModel())
                     },
                 )
             }
         }
     }
 
-    if (selectedPopularPlace != null) {
+    if (detailPlace != null) {
         PlaceDetailBottomSheet(
             uiState = placeDetailUiState,
             onDismiss = {
-                selectedPopularPlace = null
+                detailPlace = null
                 placeDetailViewModel.clear()
             },
         )
@@ -253,6 +276,81 @@ private fun CityFlowLogo() {
             .clip(RoundedCornerShape(10.dp)),
         contentScale = ContentScale.Crop
     )
+}
+
+@Composable
+private fun GreetingSection(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = "${currentGreeting()} 👋",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.ExtraBold,
+        )
+        Text(
+            text = "Explore Bangkok smarter today.",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun TravelNoticeCard(
+    notice: String,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(18.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.16f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                HomeIconGraphic(
+                    icon = HomeIcon.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "Travel Notice",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    fontWeight = FontWeight.Bold,
+                )
+                Crossfade(
+                    targetState = notice,
+                    label = "TravelNoticeText",
+                ) { currentNotice ->
+                    Text(
+                        text = currentNotice,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.86f),
+                        lineHeight = 20.sp,
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -570,6 +668,152 @@ private fun PopularPlaceCard(
 }
 
 @Composable
+private fun RecommendedDestinationsSection(
+    places: List<BangkokPlace>,
+    selectedPlace: BangkokPlace?,
+    onPlaceClick: (BangkokPlace) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        SectionHeader(
+            title = "Recommended Destinations",
+            modifier = Modifier.padding(horizontal = 24.dp)
+        )
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            items(
+                items = places,
+                key = { place -> place.name },
+            ) { place ->
+                RecommendedDestinationCard(
+                    place = place,
+                    isSelected = place == selectedPlace,
+                    onClick = { onPlaceClick(place) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecommendedDestinationCard(
+    place: BangkokPlace,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .width(220.dp)
+            .clickable(role = Role.Button, onClick = onClick),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surface
+            },
+        ),
+        border = if (isSelected) {
+            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+        } else {
+            null
+        },
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 6.dp else 2.dp),
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp),
+            ) {
+                Image(
+                    painter = painterResource(place.imageRes),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(10.dp)
+                        .clip(RoundedCornerShape(22.dp)),
+                    contentScale = ContentScale.Crop,
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(10.dp)
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.22f)),
+                                startY = 100f
+                            )
+                        )
+                )
+
+                CategoryBadge(
+                    category = place.primaryCategory,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(18.dp),
+                )
+            }
+            Column(
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    text = place.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    HomeIconGraphic(
+                        icon = HomeIcon.Station,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        text = place.nearestStation,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryBadge(
+    category: Category,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(999.dp),
+        color = categoryColor(category).copy(alpha = 0.94f),
+    ) {
+        Text(
+            text = category.displayName(),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            color = Color.White,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
 private fun SectionHeader(
     title: String,
     modifier: Modifier = Modifier
@@ -584,7 +828,7 @@ private fun SectionHeader(
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.ExtraBold,
             color = MaterialTheme.colorScheme.onBackground,
-            letterSpacing = (-0.5).sp
+            letterSpacing = 0.sp
         )
         Text(
             text = "See All",
@@ -594,6 +838,47 @@ private fun SectionHeader(
             modifier = Modifier.clickable { }
         )
     }
+}
+
+private fun currentGreeting(): String {
+    return when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
+        in 5..11 -> "Good Morning"
+        in 12..16 -> "Good Afternoon"
+        in 17..21 -> "Good Evening"
+        else -> "Good Night"
+    }
+}
+
+private fun Category.displayName(): String {
+    return when (this) {
+        Category.FOODIE -> "Foodie"
+        Category.CULTURE -> "Culture"
+        Category.SHOPPING -> "Shopping"
+        Category.NIGHTLIFE -> "Nightlife"
+        Category.CAFE -> "Cafe"
+        Category.FAMILY -> "Family"
+    }
+}
+
+private fun categoryColor(category: Category): Color {
+    return when (category) {
+        Category.FOODIE -> CityFlowOrange
+        Category.CULTURE -> Color(0xFF7E57C2)
+        Category.SHOPPING -> CityFlowBlue
+        Category.NIGHTLIFE -> Color(0xFF3949AB)
+        Category.CAFE -> Color(0xFF00897B)
+        Category.FAMILY -> CityFlowGreen
+    }
+}
+
+private fun BangkokPlace.toPopularPlaceUiModel(): PopularPlaceUiModel {
+    return PopularPlaceUiModel(
+        name = name,
+        nearestStation = nearestStation,
+        rating = "-",
+        imageColor = categoryColor(primaryCategory),
+        imageResId = imageRes,
+    )
 }
 
 private val sampleQuickActions = listOf(
