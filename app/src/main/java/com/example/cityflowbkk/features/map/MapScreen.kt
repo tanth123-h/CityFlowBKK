@@ -94,20 +94,36 @@ fun MapScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        GoogleMap(
-            modifier = Modifier.fillMaxSize(),
-            cameraPositionState = cameraPositionState,
-            properties = MapProperties(isMyLocationEnabled = uiState.hasLocationPermission),
-            uiSettings = MapUiSettings(
+        val mapProperties = remember(uiState.hasLocationPermission) {
+            MapProperties(isMyLocationEnabled = uiState.hasLocationPermission)
+        }
+        val mapUiSettings = remember {
+            MapUiSettings(
                 zoomControlsEnabled = true,
                 myLocationButtonEnabled = false,
                 compassEnabled = true,
-            ),
+            )
+        }
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState,
+            properties = mapProperties,
+            uiSettings = mapUiSettings,
             onMapLoaded = { viewModel.onMapReady() },
             onMapClick = { latLng ->
                 viewModel.onMapClick(MapLatLng(latLng.latitude, latLng.longitude))
             },
         ) {
+ tindersuper
+            uiState.selectedPlace?.let { place ->
+                val markerState = remember(place.latitude, place.longitude) {
+                    MarkerState(position = LatLng(place.latitude, place.longitude))
+                }
+                Marker(
+                    state = markerState,
+                    title = place.name,
+                    snippet = place.address,
+
             if (uiState.droppedPin == null) {
                 uiState.selectedPlace?.let { place ->
                     Marker(
@@ -127,6 +143,7 @@ fun MapScreen(
                     ),
                     title = pin.placeName,
                     snippet = pin.address,
+ master
                 )
             }
 

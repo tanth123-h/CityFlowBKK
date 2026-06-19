@@ -109,6 +109,7 @@ fun HomeScreen(
     uiState: HomeUiState = HomeUiState(),
     onPlanRouteClick: () -> Unit = {},
     onQuickActionClick: (QuickActionUiModel) -> Unit = {},
+    onTourClick: () -> Unit = {},
     placeDetailViewModel: PlaceDetailViewModel = viewModel(),
 ) {
     val recommendations = remember(uiState.places, uiState.preferredCategory) {
@@ -156,7 +157,13 @@ fun HomeScreen(
                 QuickActionsGrid(
                     modifier = Modifier.padding(horizontal = 24.dp),
                     quickActions = uiState.quickActions,
-                    onQuickActionClick = onQuickActionClick,
+                    onQuickActionClick = { action ->
+                        if (action.title == "Tour") {
+                            onTourClick()
+                        } else {
+                            onQuickActionClick(action)
+                        }
+                    },
                 )
 
                 RecommendedDestinationsSection(
