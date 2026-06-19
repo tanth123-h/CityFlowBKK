@@ -8,12 +8,14 @@ enum class BottomNavItem(
     val icon: HomeIcon,
 ) {
     Home(Screen.Home.route, "Home", HomeIcon.Home),
-    Route(Screen.Route.route, "Route", HomeIcon.Route),
+    Route(Screen.Route.createRoute(), "Route", HomeIcon.Route),
     Map(Screen.Map.route, "Map", HomeIcon.Map),
     Station(Screen.Station.route, "Station", HomeIcon.Station),
     Profile(Screen.Profile.route, "Profile", HomeIcon.Profile),
 }
 
 fun routeToBottomNavItem(route: String?): BottomNavItem {
+    // Route tab matches any route that starts with "route?" (handles destination query param)
+    if (route != null && route.startsWith("route?")) return BottomNavItem.Route
     return BottomNavItem.entries.firstOrNull { it.route == route } ?: BottomNavItem.Home
 }

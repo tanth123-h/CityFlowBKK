@@ -2,7 +2,12 @@ package com.example.cityflowbkk.navigation
 
 sealed class Screen(val route: String) {
     data object Home : Screen("home")
-    data object Route : Screen("route")
+    data object Route : Screen("route?destination={destination}") {
+        /** Navigate to Route screen with an optional pre-filled destination. */
+        fun createRoute(destination: String = "") =
+            if (destination.isBlank()) "route?destination="
+            else "route?destination=${java.net.URLEncoder.encode(destination, "UTF-8")}"
+    }
     data object Map : Screen("map")
     data object Station : Screen("station")
     data object Profile : Screen("profile")

@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -51,6 +52,17 @@ fun MainScreen(
         currentRoute?.startsWith(pattern.substringBefore("{")) == true
     }
 
+    // Helper: navigate to Route screen, optionally pre-filling a destination name
+    val navigateToRoute: (String) -> Unit = { destination ->
+        navController.navigate(Screen.Route.createRoute(destination)) {
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = false   // don't restore — we want fresh state with new destination
+        }
+    }
+
     LaunchedEffect(routeRequestVersion, requestedStartRoute) {
         val route = requestedStartRoute ?: return@LaunchedEffect
         navController.navigate(route) {
@@ -88,19 +100,27 @@ fun MainScreen(
             composable(Screen.Home.route) {
                 HomeScreen(
                     onTourClick = { navController.navigate(Screen.DiscoverBangkok.route) },
-                    onPlanRouteClick = {
-                        navController.navigate(Screen.Route.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
+                    onPlanRouteClick = { navigateToRoute("") },
+                    onPlanRouteToDestination = { destination -> navigateToRoute(destination) },
                 )
             }
-            composable(Screen.Route.route) {
+            composable(
+                route = Screen.Route.route,
+                arguments = listOf(
+                    navArgument("destination") {
+                        type = NavType.StringType
+                        defaultValue = ""
+                        nullable = false
+                    }
+                ),
+            ) { backStackEntry ->
+                val encodedDest = backStackEntry.arguments?.getString("destination") ?: ""
+                val destination = remember(encodedDest) {
+                    if (encodedDest.isBlank()) ""
+                    else java.net.URLDecoder.decode(encodedDest, "UTF-8")
+                }
                 RouteScreen(
+                    initialDestination = destination,
                     onNavigateToDetails = { routeDetailsId ->
                         navController.navigate(Screen.RouteDetails.createRoute(routeDetailsId))
                     },
@@ -145,7 +165,8 @@ fun MainScreen(
                     onBackClick = { navController.popBackStack() },
                     onPlaceClick = { attraction ->
                         navController.navigate(Screen.SavedPlaceDetail.createRoute(attraction.id))
-                    }
+                    },
+                    onPlanRouteToPlace = { attraction -> navigateToRoute(attraction.name) }
                 )
             }
             composable(
@@ -159,7 +180,8 @@ fun MainScreen(
                 if (attraction != null) {
                     SavedPlaceDetailScreen(
                         attraction = attraction,
-                        onBackClick = { navController.popBackStack() }
+                        onBackClick = { navController.popBackStack() },
+                        onPlanRouteClick = { navigateToRoute(attraction.name) }
                     )
                 } else {
                     Box(

@@ -114,6 +114,7 @@ fun HomeScreen(
     onNavigateToStationMapping: () -> Unit = {},
     onQuickActionClick: (QuickActionUiModel) -> Unit = {},
     onTourClick: () -> Unit = {},
+    onPlanRouteToDestination: (String) -> Unit = {},
     placeDetailViewModel: PlaceDetailViewModel = viewModel(),
 ) {
     val recommendations = remember(uiState.places, uiState.preferredCategory) {
@@ -162,10 +163,10 @@ fun HomeScreen(
                     modifier = Modifier.padding(horizontal = 24.dp),
                     quickActions = uiState.quickActions,
                     onQuickActionClick = { action ->
-                        if (action.title == "Tour") {
-                            onTourClick()
-                        } else {
-                            onQuickActionClick(action)
+                        when (action.title) {
+                            "Tour" -> onTourClick()
+                            "Plan Route" -> onPlanRouteClick()
+                            else -> onQuickActionClick(action)
                         }
                     },
                 )
@@ -178,6 +179,7 @@ fun HomeScreen(
                         detailPlace = place
                         placeDetailViewModel.loadPlace(place.toPopularPlaceUiModel())
                     },
+                    onPlanRouteToPlace = { place -> onPlanRouteToDestination(place.name) },
                 )
             }
         }
@@ -539,6 +541,7 @@ private fun RecommendedDestinationsSection(
     places: List<BangkokPlace>,
     selectedPlace: BangkokPlace?,
     onPlaceClick: (BangkokPlace) -> Unit,
+    onPlanRouteToPlace: (BangkokPlace) -> Unit = {},
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         SectionHeader(
@@ -558,6 +561,7 @@ private fun RecommendedDestinationsSection(
                     place = place,
                     isSelected = place == selectedPlace,
                     onClick = { onPlaceClick(place) },
+                    onPlanRouteClick = { onPlanRouteToPlace(place) },
                 )
             }
         }
@@ -569,6 +573,7 @@ private fun RecommendedDestinationCard(
     place: BangkokPlace,
     isSelected: Boolean,
     onClick: () -> Unit,
+    onPlanRouteClick: () -> Unit = {},
 ) {
     val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
     
@@ -639,7 +644,7 @@ private fun RecommendedDestinationCard(
                 }
             }
             Column(
-                modifier = Modifier.padding(20.dp),
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
@@ -664,6 +669,30 @@ private fun RecommendedDestinationCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                // Plan Route button
+                Button(
+                    onClick = onPlanRouteClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = Color.White,
+                    ),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+                ) {
+                    HomeIconGraphic(
+                        icon = HomeIcon.Route,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = Color.White,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "Plan Route",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
                     )
                 }
             }

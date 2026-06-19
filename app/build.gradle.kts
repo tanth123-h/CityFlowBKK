@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.compile.JavaCompile
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -38,6 +40,13 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+    // Force javac to use the Android Studio JBR instead of Kiro's bundled JRE,
+    // which lacks jlink (required by JdkImageTransform when compileSdk >= 36).
+    tasks.withType<JavaCompile>().configureEach {
+        val jbrHome = "C:/Program Files/Android/Android Studio/jbr"
+        options.forkOptions.javaHome = file(jbrHome)
+        options.isFork = true
     }
     buildFeatures {
         compose = true

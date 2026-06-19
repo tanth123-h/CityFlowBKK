@@ -102,10 +102,18 @@ private enum class NavSheetState { Collapsed, HalfExpanded, FullyExpanded }
 fun RouteScreen(
     viewModel: RouteViewModel = viewModel(),
     onNavigateToDetails: (routeDetailsId: String) -> Unit = {},
+    initialDestination: String = "",
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     var hasRequestedPermission by remember { mutableStateOf(false) }
+
+    // Pre-fill destination when navigated from another screen (recommended or saved place)
+    LaunchedEffect(initialDestination) {
+        if (initialDestination.isNotBlank()) {
+            viewModel.onDestinationChange(initialDestination)
+        }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),

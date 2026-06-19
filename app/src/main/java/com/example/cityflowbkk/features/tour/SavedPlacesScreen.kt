@@ -31,7 +31,8 @@ import com.example.cityflowbkk.ui.theme.CityFlowBlue
 fun SavedPlacesScreen(
     viewModel: DiscoverViewModel,
     onBackClick: () -> Unit,
-    onPlaceClick: (AttractionUiModel) -> Unit = {}
+    onPlaceClick: (AttractionUiModel) -> Unit = {},
+    onPlanRouteToPlace: (AttractionUiModel) -> Unit = {}
 ) {
     val savedState by viewModel.savedPlacesState.collectAsStateWithLifecycle()
 
@@ -92,7 +93,8 @@ fun SavedPlacesScreen(
                     SavedPlaceItem(
                         place = place,
                         onRemove = { viewModel.removeSavedPlace(place.id) },
-                        onClick = { onPlaceClick(place) }
+                        onClick = { onPlaceClick(place) },
+                        onPlanRoute = { onPlanRouteToPlace(place) }
                     )
                 }
             }
@@ -104,7 +106,8 @@ fun SavedPlacesScreen(
 fun SavedPlaceItem(
     place: AttractionUiModel,
     onRemove: () -> Unit,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
+    onPlanRoute: () -> Unit = {}
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -114,63 +117,85 @@ fun SavedPlaceItem(
             .fillMaxWidth()
             .clickable(onClick = onClick)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (place.photoUrl != null) {
-                AsyncImage(
-                    model = place.photoUrl,
-                    contentDescription = place.name,
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(CityFlowBlue.copy(alpha = 0.2f))
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = place.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (place.rating != null) {
-                    Text(
-                        text = "⭐ ${place.rating}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                if (place.photoUrl != null) {
+                    AsyncImage(
+                        model = place.photoUrl,
+                        contentDescription = place.name,
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(CityFlowBlue.copy(alpha = 0.2f))
                     )
                 }
-                if (place.address != null) {
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     Text(
-                        text = "📍 ${place.address}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = place.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    if (place.rating != null) {
+                        Text(
+                            text = "⭐ ${place.rating}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (place.address != null) {
+                        Text(
+                            text = "📍 ${place.address}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                IconButton(onClick = onRemove) {
+                    Text("🗑️", fontSize = 20.sp)
                 }
             }
 
-            IconButton(onClick = onRemove) {
-                Text("🗑️", fontSize = 20.sp)
+            // Plan Route button
+            Button(
+                onClick = onPlanRoute,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+            ) {
+                Text(
+                    text = "🗺 Plan Route Here",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                )
             }
         }
     }

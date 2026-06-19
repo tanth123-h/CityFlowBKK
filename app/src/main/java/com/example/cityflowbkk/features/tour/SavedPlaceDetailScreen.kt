@@ -42,6 +42,7 @@ import java.util.Calendar
 fun SavedPlaceDetailScreen(
     attraction: AttractionUiModel,
     onBackClick: () -> Unit,
+    onPlanRouteClick: () -> Unit = {},
     viewModel: SavedPlaceDetailViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -167,6 +168,28 @@ fun SavedPlaceDetailScreen(
                             )
                         }
                     }
+                }
+
+                // ── Plan Route CTA ────────────────────────────────────────
+                Button(
+                    onClick = onPlanRouteClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = CityFlowGreen,
+                        contentColor = Color.White,
+                    ),
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 14.dp),
+                ) {
+                    Text("🗺", fontSize = 18.sp)
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = "Plan Route to ${uiState.name}",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
 
                 // ── Full opening hours ────────────────────────────────────
