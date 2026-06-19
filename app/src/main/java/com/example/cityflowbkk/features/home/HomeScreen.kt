@@ -114,6 +114,7 @@ fun HomeScreen(
     onNavigateToStationMapping: () -> Unit = {},
     onQuickActionClick: (QuickActionUiModel) -> Unit = {},
     onTourClick: () -> Unit = {},
+    onTutorialsClick: () -> Unit = {},
     onPlanRouteToDestination: (String) -> Unit = {},
     placeDetailViewModel: PlaceDetailViewModel = viewModel(),
 ) {
@@ -166,6 +167,7 @@ fun HomeScreen(
                         when (action.title) {
                             "Tour" -> onTourClick()
                             "Plan Route" -> onPlanRouteClick()
+                            "Tutorials" -> onTutorialsClick()
                             else -> onQuickActionClick(action)
                         }
                     },
@@ -742,7 +744,7 @@ private fun currentGreeting(): String {
 private val sampleQuickActions = listOf(
     QuickActionUiModel("Tour", HomeIcon.Map, CityFlowBlue),
     QuickActionUiModel("Plan Route", HomeIcon.Route, CityFlowGreen),
-    QuickActionUiModel("Smart Search", HomeIcon.Search, CityFlowOrange),
+    QuickActionUiModel("Tutorials", HomeIcon.Tutorial, CityFlowOrange),
 )
 
 private val samplePopularPlaces = listOf(

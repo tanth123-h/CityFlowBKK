@@ -34,6 +34,7 @@ enum class HomeIcon {
     ChevronUp,
     ChevronDown,
     Car,
+    Tutorial,
 }
 
 @Composable
@@ -224,6 +225,29 @@ fun HomeIconGraphic(
                 // Wheels
                 drawCircle(tint, radius = size.minDimension * 0.1f, center = point(0.27f, 0.72f), style = stroke)
                 drawCircle(tint, radius = size.minDimension * 0.1f, center = point(0.73f, 0.72f), style = stroke)
+            }
+
+            HomeIcon.Tutorial -> {
+                // Open book — left page
+                val leftPage = Path().apply {
+                    moveTo(size.width * 0.5f, size.height * 0.26f)
+                    quadraticTo(size.width * 0.32f, size.height * 0.22f, size.width * 0.14f, size.height * 0.28f)
+                    lineTo(size.width * 0.14f, size.height * 0.78f)
+                    quadraticTo(size.width * 0.32f, size.height * 0.72f, size.width * 0.5f, size.height * 0.76f)
+                    close()
+                }
+                drawPath(leftPage, tint, style = stroke)
+                // Right page
+                val rightPage = Path().apply {
+                    moveTo(size.width * 0.5f, size.height * 0.26f)
+                    quadraticTo(size.width * 0.68f, size.height * 0.22f, size.width * 0.86f, size.height * 0.28f)
+                    lineTo(size.width * 0.86f, size.height * 0.78f)
+                    quadraticTo(size.width * 0.68f, size.height * 0.72f, size.width * 0.5f, size.height * 0.76f)
+                    close()
+                }
+                drawPath(rightPage, tint, style = stroke)
+                // Spine line
+                drawLine(tint, point(0.5f, 0.26f), point(0.5f, 0.76f), strokeWidth = stroke.width, cap = StrokeCap.Round)
             }
         }
     }
