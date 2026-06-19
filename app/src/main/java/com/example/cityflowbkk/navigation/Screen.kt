@@ -6,7 +6,23 @@ sealed class Screen(val route: String) {
     data object Map : Screen("map")
     data object Station : Screen("station")
     data object Profile : Screen("profile")
+tutorials
     data object TutorialsMenu : Screen("tutorials_menu")
     data object UsageTutorials : Screen("usage_tutorials")
     data object FareTutorials : Screen("fare_tutorials")
+=======
+ tindersuper
+    data object DiscoverBangkok : Screen("discover_bangkok")
+    data object SavedPlaces : Screen("saved_places")
+    // Route: saved_place_detail/{attractionId}
+    data object SavedPlaceDetail : Screen("saved_place_detail/{attractionId}") {
+        fun createRoute(attractionId: Int) = "saved_place_detail/$attractionId"
+
+    data object RouteDetails : Screen("route_details/{routeDetailsId}") {
+        fun createRoute(routeDetailsId: String): String {
+            return "route_details/$routeDetailsId"
+        }
+ master
+    }
+ master
 }

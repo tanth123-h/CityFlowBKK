@@ -7,12 +7,15 @@ espressoCore = "3.5.1"
 lifecycleRuntimeKtx = "2.6.1"
 navigationCompose = "2.9.0"
 activityCompose = "1.8.0"
-kotlin = "2.2.10"
+kotlin = "2.2.0"
 composeBom = "2026.02.01"
 kotlinxCoroutines = "1.10.2"
 playServicesMaps = "19.2.0"
 playServicesLocation = "21.3.0"
 mapsCompose = "6.2.1"
+coilCompose = "3.1.0"
+retrofit = "2.9.0"
+okhttp = "4.12.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -36,6 +39,11 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 maps-compose = { group = "com.google.maps.android", name = "maps-compose", version.ref = "mapsCompose" }
+coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coilCompose" }
+coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coilCompose" }
+retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
+okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

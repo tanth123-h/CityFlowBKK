@@ -24,4 +24,5 @@ data class PlaceDetailUiModel(
     val description: String,
     val latitude: Double?,
     val longitude: Double?,
+    val localImageRes: Int? = null,
 )

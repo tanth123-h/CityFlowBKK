@@ -1,0 +1,56 @@
+station_id,line_id,station_code,station_name_en,station_name_th,sequence,latitude,longitude,opening_year,first_train,last_train,source_file
+PK01,MRT_PINK,PK01,Nonthaburi Civic Center,ศูนย์ราชการนนทบุรี,1,13.8617,100.5133,2023,05:30,00:00,gemini-code-1781773096961.md
+PK02,MRT_PINK,PK02,,แคราย,2,,,,,,gemini-code-1781773096961.md
+PK03,MRT_PINK,PK03,,สนามบินน้ำ,3,,,,,,gemini-code-1781773096961.md
+PK04,MRT_PINK,PK04,,สามัคคี,4,,,,,,gemini-code-1781773096961.md
+PK05,MRT_PINK,PK05,,กรมชลประทาน,5,,,,,,gemini-code-1781773096961.md
+PK06,MRT_PINK,PK06,,แยกปากเกร็ด,6,,,,,,gemini-code-1781773096961.md
+PK07,MRT_PINK,PK07,,เลี่ยงเมืองปากเกร็ด,7,,,,,,gemini-code-1781773096961.md
+PK08,MRT_PINK,PK08,,แจ้งวัฒนะ-ปากเกร็ด 28,8,,,,,,gemini-code-1781773096961.md
+PK09,MRT_PINK,PK09,,ศรีรัช,9,,,,,,gemini-code-1781773096961.md
+PK10,MRT_PINK,PK10,,เมืองทองธานี,10,,,,,,gemini-code-1781773096961.md
+MT01,MRT_PINK,MT01,Impact Muang Thong Thani,อิมแพ็ค เมืองทองธานี,11,13.9104,100.5443,2025,06:00,22:00,gemini-code-1781773096961.md
+MT02,MRT_PINK,MT02,Lake Muang Thong Thani,ทะเลสาบเมืองทองธานี,12,13.9125,100.5401,2025,06:00,22:00,gemini-code-1781773096961.md
+PK11,MRT_PINK,PK11,,แจ้งวัฒนะ 14,13,,,,,,gemini-code-1781773096961.md
+PK12,MRT_PINK,PK12,,ศูนย์ราชการเฉลิมพระเกียรติ,14,,,,,,gemini-code-1781773096961.md
+PK13,MRT_PINK,PK13,,โทรคมนาคมแห่งชาติ,15,,,,,,gemini-code-1781773096961.md
+PK14,MRT_PINK,PK14,,หลักสี่,16,,,,,,gemini-code-1781773096961.md
+PK15,MRT_PINK,PK15,,ราชภัฏพระนคร,17,,,,,,gemini-code-1781773096961.md
+PK16,MRT_PINK,PK16,Wat Phra Sri Mahathat,วัดพระศรีมหาธาตุ,18,13.8756,100.5969,2023,05:30,00:00,gemini-code-1781773096961.md
+PK17,MRT_PINK,PK17,,รามอินทรา 3,19,,,,,,gemini-code-1781773096961.md
+PK18,MRT_PINK,PK18,,ลาดปลาเค้า,20,,,,,,gemini-code-1781773096961.md
+PK19,MRT_PINK,PK19,,รามอินทรา กม.4,21,,,,,,gemini-code-1781773096961.md
+PK20,MRT_PINK,PK20,,มัยลาภ,22,,,,,,gemini-code-1781773096961.md
+PK21,MRT_PINK,PK21,,วัชรพล,23,,,,,,gemini-code-1781773096961.md
+PK22,MRT_PINK,PK22,,รามอินทรา กม.6,24,,,,,,gemini-code-1781773096961.md
+PK23,MRT_PINK,PK23,,คู้บอน,25,,,,,,gemini-code-1781773096961.md
+PK24,MRT_PINK,PK24,,รามอินทรา กม.9,26,,,,,,gemini-code-1781773096961.md
+PK25,MRT_PINK,PK25,,วงแหวนรามอินทรา,27,,,,,,gemini-code-1781773096961.md
+PK26,MRT_PINK,PK26,,นพรัตน์,28,,,,,,gemini-code-1781773096961.md
+PK27,MRT_PINK,PK27,,บางชัน,29,,,,,,gemini-code-1781773096961.md
+PK28,MRT_PINK,PK28,,เศรษฐบุตรบำเพ็ญ,30,,,,,,gemini-code-1781773096961.md
+PK29,MRT_PINK,PK29,,ตลาดมีนบุรี,31,,,,,,gemini-code-1781773096961.md
+PK30,MRT_PINK,PK30,Min Buri,มีนบุรี,32,13.8129,100.7208,2023,05:30,00:00,gemini-code-1781773096961.md
+YL01,MRT_YELLOW,YL01,Lat Phrao,ลาดพร้าว,1,13.8036,100.5739,2023,06:00,00:00,gemini-code-1781773096961.md
+YL02,MRT_YELLOW,YL02,,ภาวนา,2,,,,,,gemini-code-1781773096961.md
+YL03,MRT_YELLOW,YL03,,โชคชัย 4,3,,,,,,gemini-code-1781773096961.md
+YL04,MRT_YELLOW,YL04,,ลาดพร้าว 71,4,,,,,,gemini-code-1781773096961.md
+YL05,MRT_YELLOW,YL05,,ลาดพร้าว 83,5,,,,,,gemini-code-1781773096961.md
+YL06,MRT_YELLOW,YL06,,มหาดไทย,6,,,,,,gemini-code-1781773096961.md
+YL07,MRT_YELLOW,YL07,,ลาดพร้าว 101,7,,,,,,gemini-code-1781773096961.md
+YL08,MRT_YELLOW,YL08,,บางกะปิ,8,,,,,,gemini-code-1781773096961.md
+YL09,MRT_YELLOW,YL09,,แยกลำสาลี,9,,,,,,gemini-code-1781773096961.md
+YL10,MRT_YELLOW,YL10,,ศรีกรีฑา,10,,,,,,gemini-code-1781773096961.md
+YL11,MRT_YELLOW,YL11,,หัวหมาก,11,,,,,,gemini-code-1781773096961.md
+YL12,MRT_YELLOW,YL12,,กลันตัน,12,,,,,,gemini-code-1781773096961.md
+YL13,MRT_YELLOW,YL13,,ศรีนุช,13,,,,,,gemini-code-1781773096961.md
+YL14,MRT_YELLOW,YL14,,ศรีนครินทร์ 38,14,,,,,,gemini-code-1781773096961.md
+YL15,MRT_YELLOW,YL15,,สวนหลวง ร.9,15,,,,,,gemini-code-1781773096961.md
+YL16,MRT_YELLOW,YL16,,ศรีอุดม,16,,,,,,gemini-code-1781773096961.md
+YL17,MRT_YELLOW,YL17,Si Iam,ศรีเอี่ยม,17,13.6681,100.6644,2023,06:00,00:00,gemini-code-1781773096961.md
+YL18,MRT_YELLOW,YL18,,ศรีลาซาล,18,,,,,,gemini-code-1781773096961.md
+YL19,MRT_YELLOW,YL19,,ศรีแบริ่ง,19,,,,,,gemini-code-1781773096961.md
+YL20,MRT_YELLOW,YL20,,ศรีด่าน,20,,,,,,gemini-code-1781773096961.md
+YL21,MRT_YELLOW,YL21,,ศรีเทพา,21,,,,,,gemini-code-1781773096961.md
+YL22,MRT_YELLOW,YL22,,ทิพวัล,22,,,,,,gemini-code-1781773096961.md
+YL23,MRT_YELLOW,YL23,Samrong,สำโรง,23,13.647363,100.596153,2023,06:00,00:00,gemini-code-1781773096961.md

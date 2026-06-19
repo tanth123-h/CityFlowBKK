@@ -1,0 +1,440 @@
+PRAGMA foreign_keys = ON;
+CREATE TABLE IF NOT EXISTS operators (
+  operator_id TEXT PRIMARY KEY,
+  operator_name TEXT NOT NULL,
+  operator_short_name TEXT
+);
+CREATE TABLE IF NOT EXISTS lines (
+  line_id TEXT PRIMARY KEY,
+  line_name TEXT NOT NULL,
+  operator_id TEXT REFERENCES operators(operator_id),
+  system TEXT NOT NULL,
+  color_name TEXT,
+  color_hex TEXT,
+  route_length_km REAL,
+  station_count_declared INTEGER,
+  end_to_end_min INTEGER
+);
+CREATE TABLE IF NOT EXISTS stations (
+  station_id TEXT PRIMARY KEY,
+  line_id TEXT NOT NULL REFERENCES lines(line_id),
+  station_code TEXT NOT NULL UNIQUE,
+  station_name_en TEXT,
+  station_name_th TEXT NOT NULL,
+  sequence INTEGER,
+  latitude REAL,
+  longitude REAL,
+  opening_year INTEGER,
+  first_train TEXT,
+  last_train TEXT,
+  source_file TEXT
+);
+CREATE TABLE IF NOT EXISTS routes (
+  route_id TEXT PRIMARY KEY,
+  line_id TEXT NOT NULL REFERENCES lines(line_id),
+  route_name TEXT NOT NULL,
+  direction TEXT,
+  source_file TEXT
+);
+CREATE TABLE IF NOT EXISTS route_stops (
+  route_id TEXT NOT NULL REFERENCES routes(route_id),
+  station_id TEXT NOT NULL REFERENCES stations(station_id),
+  stop_sequence INTEGER NOT NULL,
+  PRIMARY KEY (route_id, station_id)
+);
+CREATE TABLE IF NOT EXISTS ticket_types (
+  ticket_type_id TEXT PRIMARY KEY,
+  ticket_type_name TEXT NOT NULL,
+  discount_percent REAL
+);
+CREATE TABLE IF NOT EXISTS payment_methods (
+  payment_method_id TEXT PRIMARY KEY,
+  payment_method_name TEXT NOT NULL,
+  notes TEXT
+);
+CREATE TABLE IF NOT EXISTS fare_rules (
+  fare_rule_id TEXT PRIMARY KEY,
+  line_id TEXT NOT NULL REFERENCES lines(line_id),
+  ticket_type_id TEXT NOT NULL REFERENCES ticket_types(ticket_type_id),
+  currency TEXT NOT NULL DEFAULT 'THB',
+  min_fare REAL,
+  max_fare REAL,
+  basis TEXT,
+  effective_date TEXT
+);
+CREATE TABLE IF NOT EXISTS fare_matrix (
+  fare_id TEXT PRIMARY KEY,
+  line_id TEXT NOT NULL REFERENCES lines(line_id),
+  origin_station_id TEXT NOT NULL REFERENCES stations(station_id),
+  destination_station_id TEXT NOT NULL REFERENCES stations(station_id),
+  ticket_type_id TEXT NOT NULL REFERENCES ticket_types(ticket_type_id),
+  currency TEXT NOT NULL DEFAULT 'THB',
+  fare_amount REAL NOT NULL CHECK (fare_amount >= 0),
+  source_file TEXT
+);
+CREATE TABLE IF NOT EXISTS interchanges (
+  interchange_id TEXT PRIMARY KEY,
+  station_id_a TEXT NOT NULL,
+  station_id_b TEXT NOT NULL,
+  is_valid_reference INTEGER NOT NULL CHECK (is_valid_reference IN (0,1))
+);
+CREATE INDEX IF NOT EXISTS idx_stations_line_seq ON stations(line_id, sequence);
+CREATE INDEX IF NOT EXISTS idx_stations_coords ON stations(latitude, longitude);
+CREATE INDEX IF NOT EXISTS idx_fare_lookup ON fare_matrix(line_id, origin_station_id, destination_station_id, ticket_type_id);
+CREATE INDEX IF NOT EXISTS idx_route_stops_station ON route_stops(station_id);
+
+BEGIN TRANSACTION;
+INSERT INTO operators (operator_id, operator_name, operator_short_name) VALUES ('BTSC', 'Bangkok Mass Transit System Public Company Limited', 'BTSC');
+INSERT INTO operators (operator_id, operator_name, operator_short_name) VALUES ('EBM', 'Eastern Bangkok Monorail', 'EBM');
+INSERT INTO operators (operator_id, operator_name, operator_short_name) VALUES ('NBM', 'Northern Bangkok Monorail', 'NBM');
+INSERT INTO lines (line_id, line_name, operator_id, system, color_name, color_hex, route_length_km, station_count_declared, end_to_end_min) VALUES ('BTS_SUKHUMVIT', 'BTS Sukhumvit Line', 'BTSC', 'BTS', 'Light Green', '#009C3B', 54.25, 47, 75);
+INSERT INTO lines (line_id, line_name, operator_id, system, color_name, color_hex, route_length_km, station_count_declared, end_to_end_min) VALUES ('BTS_SILOM', 'BTS Silom Line', 'BTSC', 'BTS', 'Dark Green', '#006400', 14.0, 14, 25);
+INSERT INTO lines (line_id, line_name, operator_id, system, color_name, color_hex, route_length_km, station_count_declared, end_to_end_min) VALUES ('BTS_GOLD', 'BTS Gold Line', 'BTSC', 'BTS', 'Gold', '#D4AF37', 1.8, 3, 6);
+INSERT INTO lines (line_id, line_name, operator_id, system, color_name, color_hex, route_length_km, station_count_declared, end_to_end_min) VALUES ('MRT_YELLOW', 'MRT Yellow Line', 'EBM', 'MRT', 'Yellow', '#FFD700', 30.4, 23, 45);
+INSERT INTO lines (line_id, line_name, operator_id, system, color_name, color_hex, route_length_km, station_count_declared, end_to_end_min) VALUES ('MRT_PINK', 'MRT Pink Line', 'NBM', 'MRT', 'Pink', '#FFC0CB', 37.3, 32, 65);
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK01', 'MRT_PINK', 'PK01', 'Nonthaburi Civic Center', 'ศูนย์ราชการนนทบุรี', 1, 13.8617, 100.5133, 2023, '05:30', '00:00', 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK02', 'MRT_PINK', 'PK02', NULL, 'แคราย', 2, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK03', 'MRT_PINK', 'PK03', NULL, 'สนามบินน้ำ', 3, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK04', 'MRT_PINK', 'PK04', NULL, 'สามัคคี', 4, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK05', 'MRT_PINK', 'PK05', NULL, 'กรมชลประทาน', 5, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK06', 'MRT_PINK', 'PK06', NULL, 'แยกปากเกร็ด', 6, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK07', 'MRT_PINK', 'PK07', NULL, 'เลี่ยงเมืองปากเกร็ด', 7, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK08', 'MRT_PINK', 'PK08', NULL, 'แจ้งวัฒนะ-ปากเกร็ด 28', 8, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK09', 'MRT_PINK', 'PK09', NULL, 'ศรีรัช', 9, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK10', 'MRT_PINK', 'PK10', NULL, 'เมืองทองธานี', 10, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('MT01', 'MRT_PINK', 'MT01', 'Impact Muang Thong Thani', 'อิมแพ็ค เมืองทองธานี', 11, 13.9104, 100.5443, 2025, '06:00', '22:00', 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('MT02', 'MRT_PINK', 'MT02', 'Lake Muang Thong Thani', 'ทะเลสาบเมืองทองธานี', 12, 13.9125, 100.5401, 2025, '06:00', '22:00', 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK11', 'MRT_PINK', 'PK11', NULL, 'แจ้งวัฒนะ 14', 13, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK12', 'MRT_PINK', 'PK12', NULL, 'ศูนย์ราชการเฉลิมพระเกียรติ', 14, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK13', 'MRT_PINK', 'PK13', NULL, 'โทรคมนาคมแห่งชาติ', 15, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK14', 'MRT_PINK', 'PK14', NULL, 'หลักสี่', 16, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK15', 'MRT_PINK', 'PK15', NULL, 'ราชภัฏพระนคร', 17, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK16', 'MRT_PINK', 'PK16', 'Wat Phra Sri Mahathat', 'วัดพระศรีมหาธาตุ', 18, 13.8756, 100.5969, 2023, '05:30', '00:00', 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK17', 'MRT_PINK', 'PK17', NULL, 'รามอินทรา 3', 19, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK18', 'MRT_PINK', 'PK18', NULL, 'ลาดปลาเค้า', 20, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK19', 'MRT_PINK', 'PK19', NULL, 'รามอินทรา กม.4', 21, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK20', 'MRT_PINK', 'PK20', NULL, 'มัยลาภ', 22, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK21', 'MRT_PINK', 'PK21', NULL, 'วัชรพล', 23, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK22', 'MRT_PINK', 'PK22', NULL, 'รามอินทรา กม.6', 24, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK23', 'MRT_PINK', 'PK23', NULL, 'คู้บอน', 25, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK24', 'MRT_PINK', 'PK24', NULL, 'รามอินทรา กม.9', 26, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK25', 'MRT_PINK', 'PK25', NULL, 'วงแหวนรามอินทรา', 27, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK26', 'MRT_PINK', 'PK26', NULL, 'นพรัตน์', 28, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK27', 'MRT_PINK', 'PK27', NULL, 'บางชัน', 29, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK28', 'MRT_PINK', 'PK28', NULL, 'เศรษฐบุตรบำเพ็ญ', 30, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK29', 'MRT_PINK', 'PK29', NULL, 'ตลาดมีนบุรี', 31, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('PK30', 'MRT_PINK', 'PK30', 'Min Buri', 'มีนบุรี', 32, 13.8129, 100.7208, 2023, '05:30', '00:00', 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL01', 'MRT_YELLOW', 'YL01', 'Lat Phrao', 'ลาดพร้าว', 1, 13.8036, 100.5739, 2023, '06:00', '00:00', 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL02', 'MRT_YELLOW', 'YL02', NULL, 'ภาวนา', 2, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL03', 'MRT_YELLOW', 'YL03', NULL, 'โชคชัย 4', 3, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL04', 'MRT_YELLOW', 'YL04', NULL, 'ลาดพร้าว 71', 4, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL05', 'MRT_YELLOW', 'YL05', NULL, 'ลาดพร้าว 83', 5, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL06', 'MRT_YELLOW', 'YL06', NULL, 'มหาดไทย', 6, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL07', 'MRT_YELLOW', 'YL07', NULL, 'ลาดพร้าว 101', 7, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL08', 'MRT_YELLOW', 'YL08', NULL, 'บางกะปิ', 8, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL09', 'MRT_YELLOW', 'YL09', NULL, 'แยกลำสาลี', 9, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL10', 'MRT_YELLOW', 'YL10', NULL, 'ศรีกรีฑา', 10, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL11', 'MRT_YELLOW', 'YL11', NULL, 'หัวหมาก', 11, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL12', 'MRT_YELLOW', 'YL12', NULL, 'กลันตัน', 12, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL13', 'MRT_YELLOW', 'YL13', NULL, 'ศรีนุช', 13, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL14', 'MRT_YELLOW', 'YL14', NULL, 'ศรีนครินทร์ 38', 14, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL15', 'MRT_YELLOW', 'YL15', NULL, 'สวนหลวง ร.9', 15, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL16', 'MRT_YELLOW', 'YL16', NULL, 'ศรีอุดม', 16, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL17', 'MRT_YELLOW', 'YL17', 'Si Iam', 'ศรีเอี่ยม', 17, 13.6681, 100.6644, 2023, '06:00', '00:00', 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL18', 'MRT_YELLOW', 'YL18', NULL, 'ศรีลาซาล', 18, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL19', 'MRT_YELLOW', 'YL19', NULL, 'ศรีแบริ่ง', 19, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL20', 'MRT_YELLOW', 'YL20', NULL, 'ศรีด่าน', 20, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL21', 'MRT_YELLOW', 'YL21', NULL, 'ศรีเทพา', 21, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL22', 'MRT_YELLOW', 'YL22', NULL, 'ทิพวัล', 22, NULL, NULL, NULL, NULL, NULL, 'gemini-code-1781773096961.md');
+INSERT INTO stations (station_id, line_id, station_code, station_name_en, station_name_th, sequence, latitude, longitude, opening_year, first_train, last_train, source_file) VALUES ('YL23', 'MRT_YELLOW', 'YL23', 'Samrong', 'สำโรง', 23, 13.647363, 100.596153, 2023, '06:00', '00:00', 'gemini-code-1781773096961.md');
+INSERT INTO routes (route_id, line_id, route_name, direction, source_file) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'MRT_PINK', 'Pink Line reference order from fare table', 'reference', 'gemini-code-1781773096961.md');
+INSERT INTO routes (route_id, line_id, route_name, direction, source_file) VALUES ('MRT_YELLOW_REFERENCE', 'MRT_YELLOW', 'Yellow Line reference order from fare table', 'reference', 'gemini-code-1781773096961.md');
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK01', 1);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK02', 2);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK03', 3);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK04', 4);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK05', 5);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK06', 6);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK07', 7);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK08', 8);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK09', 9);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK10', 10);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'MT01', 11);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'MT02', 12);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK11', 13);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK12', 14);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK13', 15);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK14', 16);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK15', 17);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK16', 18);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK17', 19);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK18', 20);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK19', 21);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK20', 22);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK21', 23);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK22', 24);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK23', 25);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK24', 26);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK25', 27);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK26', 28);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK27', 29);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK28', 30);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK29', 31);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_PINK_MAIN_WITH_MT_SPUR_REFERENCE', 'PK30', 32);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL01', 1);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL02', 2);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL03', 3);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL04', 4);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL05', 5);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL06', 6);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL07', 7);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL08', 8);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL09', 9);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL10', 10);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL11', 11);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL12', 12);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL13', 13);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL14', 14);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL15', 15);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL16', 16);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL17', 17);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL18', 18);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL19', 19);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL20', 20);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL21', 21);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL22', 22);
+INSERT INTO route_stops (route_id, station_id, stop_sequence) VALUES ('MRT_YELLOW_REFERENCE', 'YL23', 23);
+INSERT INTO ticket_types (ticket_type_id, ticket_type_name, discount_percent) VALUES ('adult', 'Adult / General', 0.0);
+INSERT INTO ticket_types (ticket_type_id, ticket_type_name, discount_percent) VALUES ('senior', 'Senior', 50.0);
+INSERT INTO payment_methods (payment_method_id, payment_method_name, notes) VALUES ('rabbit_card', 'Rabbit Card', 'Accepted across BTS Group lines per input document.');
+INSERT INTO payment_methods (payment_method_id, payment_method_name, notes) VALUES ('emv_contactless', 'EMV Contactless', 'Input states EMV contactless is supported at MRT Yellow and Pink line gates.');
+INSERT INTO payment_methods (payment_method_id, payment_method_name, notes) VALUES ('single_journey_token', 'Single Journey Token', 'Input states BTS Sukhumvit, Silom, and Gold require Rabbit Card or physical single-journey token.');
+INSERT INTO fare_rules (fare_rule_id, line_id, ticket_type_id, currency, min_fare, max_fare, basis, effective_date) VALUES ('MRT_PINK_ADULT', 'MRT_PINK', 'adult', 'THB', 15.0, 45.0, 'station_count_reference_table', NULL);
+INSERT INTO fare_rules (fare_rule_id, line_id, ticket_type_id, currency, min_fare, max_fare, basis, effective_date) VALUES ('MRT_PINK_SENIOR', 'MRT_PINK', 'senior', 'THB', 8.0, 23.0, 'station_count_reference_table', NULL);
+INSERT INTO fare_rules (fare_rule_id, line_id, ticket_type_id, currency, min_fare, max_fare, basis, effective_date) VALUES ('MRT_YELLOW_ADULT', 'MRT_YELLOW', 'adult', 'THB', 15.0, 45.0, 'station_count_reference_table', NULL);
+INSERT INTO fare_rules (fare_rule_id, line_id, ticket_type_id, currency, min_fare, max_fare, basis, effective_date) VALUES ('MRT_YELLOW_SENIOR', 'MRT_YELLOW', 'senior', 'THB', 8.0, 23.0, 'station_count_reference_table', NULL);
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK01', 'MRT_PINK', 'PK01', 'PK01', 'adult', 'THB', 15.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK01', 'MRT_PINK', 'PK30', 'PK01', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK01', 'MRT_PINK', 'PK01', 'PK01', 'senior', 'THB', 8.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK01', 'MRT_PINK', 'PK30', 'PK01', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK02', 'MRT_PINK', 'PK01', 'PK02', 'adult', 'THB', 18.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK02', 'MRT_PINK', 'PK30', 'PK02', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK02', 'MRT_PINK', 'PK01', 'PK02', 'senior', 'THB', 9.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK02', 'MRT_PINK', 'PK30', 'PK02', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK03', 'MRT_PINK', 'PK01', 'PK03', 'adult', 'THB', 25.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK03', 'MRT_PINK', 'PK30', 'PK03', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK03', 'MRT_PINK', 'PK01', 'PK03', 'senior', 'THB', 12.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK03', 'MRT_PINK', 'PK30', 'PK03', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK04', 'MRT_PINK', 'PK01', 'PK04', 'adult', 'THB', 28.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK04', 'MRT_PINK', 'PK30', 'PK04', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK04', 'MRT_PINK', 'PK01', 'PK04', 'senior', 'THB', 14.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK04', 'MRT_PINK', 'PK30', 'PK04', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK05', 'MRT_PINK', 'PK01', 'PK05', 'adult', 'THB', 30.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK05', 'MRT_PINK', 'PK30', 'PK05', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK05', 'MRT_PINK', 'PK01', 'PK05', 'senior', 'THB', 15.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK05', 'MRT_PINK', 'PK30', 'PK05', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK06', 'MRT_PINK', 'PK01', 'PK06', 'adult', 'THB', 34.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK06', 'MRT_PINK', 'PK30', 'PK06', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK06', 'MRT_PINK', 'PK01', 'PK06', 'senior', 'THB', 17.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK06', 'MRT_PINK', 'PK30', 'PK06', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK07', 'MRT_PINK', 'PK01', 'PK07', 'adult', 'THB', 37.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK07', 'MRT_PINK', 'PK30', 'PK07', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK07', 'MRT_PINK', 'PK01', 'PK07', 'senior', 'THB', 19.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK07', 'MRT_PINK', 'PK30', 'PK07', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK08', 'MRT_PINK', 'PK01', 'PK08', 'adult', 'THB', 41.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK08', 'MRT_PINK', 'PK30', 'PK08', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK08', 'MRT_PINK', 'PK01', 'PK08', 'senior', 'THB', 21.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK08', 'MRT_PINK', 'PK30', 'PK08', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK09', 'MRT_PINK', 'PK01', 'PK09', 'adult', 'THB', 44.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK09', 'MRT_PINK', 'PK30', 'PK09', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK09', 'MRT_PINK', 'PK01', 'PK09', 'senior', 'THB', 22.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK09', 'MRT_PINK', 'PK30', 'PK09', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK10', 'MRT_PINK', 'PK01', 'PK10', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK10', 'MRT_PINK', 'PK30', 'PK10', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK10', 'MRT_PINK', 'PK01', 'PK10', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK10', 'MRT_PINK', 'PK30', 'PK10', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_MT01', 'MRT_PINK', 'PK01', 'MT01', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_MT01', 'MRT_PINK', 'PK30', 'MT01', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_MT01', 'MRT_PINK', 'PK01', 'MT01', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_MT01', 'MRT_PINK', 'PK30', 'MT01', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_MT02', 'MRT_PINK', 'PK01', 'MT02', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_MT02', 'MRT_PINK', 'PK30', 'MT02', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_MT02', 'MRT_PINK', 'PK01', 'MT02', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_MT02', 'MRT_PINK', 'PK30', 'MT02', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK11', 'MRT_PINK', 'PK01', 'PK11', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK11', 'MRT_PINK', 'PK30', 'PK11', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK11', 'MRT_PINK', 'PK01', 'PK11', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK11', 'MRT_PINK', 'PK30', 'PK11', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK12', 'MRT_PINK', 'PK01', 'PK12', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK12', 'MRT_PINK', 'PK30', 'PK12', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK12', 'MRT_PINK', 'PK01', 'PK12', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK12', 'MRT_PINK', 'PK30', 'PK12', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK13', 'MRT_PINK', 'PK01', 'PK13', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK13', 'MRT_PINK', 'PK30', 'PK13', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK13', 'MRT_PINK', 'PK01', 'PK13', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK13', 'MRT_PINK', 'PK30', 'PK13', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK14', 'MRT_PINK', 'PK01', 'PK14', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK14', 'MRT_PINK', 'PK30', 'PK14', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK14', 'MRT_PINK', 'PK01', 'PK14', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK14', 'MRT_PINK', 'PK30', 'PK14', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK15', 'MRT_PINK', 'PK01', 'PK15', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK15', 'MRT_PINK', 'PK30', 'PK15', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK15', 'MRT_PINK', 'PK01', 'PK15', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK15', 'MRT_PINK', 'PK30', 'PK15', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK16', 'MRT_PINK', 'PK01', 'PK16', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK16', 'MRT_PINK', 'PK30', 'PK16', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK16', 'MRT_PINK', 'PK01', 'PK16', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK16', 'MRT_PINK', 'PK30', 'PK16', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK17', 'MRT_PINK', 'PK01', 'PK17', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK17', 'MRT_PINK', 'PK30', 'PK17', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK17', 'MRT_PINK', 'PK01', 'PK17', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK17', 'MRT_PINK', 'PK30', 'PK17', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK18', 'MRT_PINK', 'PK01', 'PK18', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK18', 'MRT_PINK', 'PK30', 'PK18', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK18', 'MRT_PINK', 'PK01', 'PK18', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK18', 'MRT_PINK', 'PK30', 'PK18', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK19', 'MRT_PINK', 'PK01', 'PK19', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK19', 'MRT_PINK', 'PK30', 'PK19', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK19', 'MRT_PINK', 'PK01', 'PK19', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK19', 'MRT_PINK', 'PK30', 'PK19', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK20', 'MRT_PINK', 'PK01', 'PK20', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK20', 'MRT_PINK', 'PK30', 'PK20', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK20', 'MRT_PINK', 'PK01', 'PK20', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK20', 'MRT_PINK', 'PK30', 'PK20', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK21', 'MRT_PINK', 'PK01', 'PK21', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK21', 'MRT_PINK', 'PK30', 'PK21', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK21', 'MRT_PINK', 'PK01', 'PK21', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK21', 'MRT_PINK', 'PK30', 'PK21', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK22', 'MRT_PINK', 'PK01', 'PK22', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK22', 'MRT_PINK', 'PK30', 'PK22', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK22', 'MRT_PINK', 'PK01', 'PK22', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK22', 'MRT_PINK', 'PK30', 'PK22', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK23', 'MRT_PINK', 'PK01', 'PK23', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK23', 'MRT_PINK', 'PK30', 'PK23', 'adult', 'THB', 42.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK23', 'MRT_PINK', 'PK01', 'PK23', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK23', 'MRT_PINK', 'PK30', 'PK23', 'senior', 'THB', 21.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK24', 'MRT_PINK', 'PK01', 'PK24', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK24', 'MRT_PINK', 'PK30', 'PK24', 'adult', 'THB', 39.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK24', 'MRT_PINK', 'PK01', 'PK24', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK24', 'MRT_PINK', 'PK30', 'PK24', 'senior', 'THB', 20.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK25', 'MRT_PINK', 'PK01', 'PK25', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK25', 'MRT_PINK', 'PK30', 'PK25', 'adult', 'THB', 35.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK25', 'MRT_PINK', 'PK01', 'PK25', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK25', 'MRT_PINK', 'PK30', 'PK25', 'senior', 'THB', 18.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK26', 'MRT_PINK', 'PK01', 'PK26', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK26', 'MRT_PINK', 'PK30', 'PK26', 'adult', 'THB', 30.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK26', 'MRT_PINK', 'PK01', 'PK26', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK26', 'MRT_PINK', 'PK30', 'PK26', 'senior', 'THB', 15.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK27', 'MRT_PINK', 'PK01', 'PK27', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK27', 'MRT_PINK', 'PK30', 'PK27', 'adult', 'THB', 25.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK27', 'MRT_PINK', 'PK01', 'PK27', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK27', 'MRT_PINK', 'PK30', 'PK27', 'senior', 'THB', 13.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK28', 'MRT_PINK', 'PK01', 'PK28', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK28', 'MRT_PINK', 'PK30', 'PK28', 'adult', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK28', 'MRT_PINK', 'PK01', 'PK28', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK28', 'MRT_PINK', 'PK30', 'PK28', 'senior', 'THB', 12.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK29', 'MRT_PINK', 'PK01', 'PK29', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK29', 'MRT_PINK', 'PK30', 'PK29', 'adult', 'THB', 18.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK29', 'MRT_PINK', 'PK01', 'PK29', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK29', 'MRT_PINK', 'PK30', 'PK29', 'senior', 'THB', 9.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK01_PK30', 'MRT_PINK', 'PK01', 'PK30', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_adult_PK30_PK30', 'MRT_PINK', 'PK30', 'PK30', 'adult', 'THB', 15.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK01_PK30', 'MRT_PINK', 'PK01', 'PK30', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_PINK_senior_PK30_PK30', 'MRT_PINK', 'PK30', 'PK30', 'senior', 'THB', 8.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL01', 'MRT_YELLOW', 'YL01', 'YL01', 'adult', 'THB', 15.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL01', 'MRT_YELLOW', 'YL23', 'YL01', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL01', 'MRT_YELLOW', 'YL01', 'YL01', 'senior', 'THB', 8.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL01', 'MRT_YELLOW', 'YL23', 'YL01', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL02', 'MRT_YELLOW', 'YL01', 'YL02', 'adult', 'THB', 19.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL02', 'MRT_YELLOW', 'YL23', 'YL02', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL02', 'MRT_YELLOW', 'YL01', 'YL02', 'senior', 'THB', 10.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL02', 'MRT_YELLOW', 'YL23', 'YL02', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL03', 'MRT_YELLOW', 'YL01', 'YL03', 'adult', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL03', 'MRT_YELLOW', 'YL23', 'YL03', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL03', 'MRT_YELLOW', 'YL01', 'YL03', 'senior', 'THB', 12.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL03', 'MRT_YELLOW', 'YL23', 'YL03', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL04', 'MRT_YELLOW', 'YL01', 'YL04', 'adult', 'THB', 27.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL04', 'MRT_YELLOW', 'YL23', 'YL04', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL04', 'MRT_YELLOW', 'YL01', 'YL04', 'senior', 'THB', 14.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL04', 'MRT_YELLOW', 'YL23', 'YL04', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL05', 'MRT_YELLOW', 'YL01', 'YL05', 'adult', 'THB', 30.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL05', 'MRT_YELLOW', 'YL23', 'YL05', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL05', 'MRT_YELLOW', 'YL01', 'YL05', 'senior', 'THB', 15.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL05', 'MRT_YELLOW', 'YL23', 'YL05', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL06', 'MRT_YELLOW', 'YL01', 'YL06', 'adult', 'THB', 33.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL06', 'MRT_YELLOW', 'YL23', 'YL06', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL06', 'MRT_YELLOW', 'YL01', 'YL06', 'senior', 'THB', 17.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL06', 'MRT_YELLOW', 'YL23', 'YL06', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL07', 'MRT_YELLOW', 'YL01', 'YL07', 'adult', 'THB', 34.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL07', 'MRT_YELLOW', 'YL23', 'YL07', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL07', 'MRT_YELLOW', 'YL01', 'YL07', 'senior', 'THB', 18.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL07', 'MRT_YELLOW', 'YL23', 'YL07', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL08', 'MRT_YELLOW', 'YL01', 'YL08', 'adult', 'THB', 38.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL08', 'MRT_YELLOW', 'YL23', 'YL08', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL08', 'MRT_YELLOW', 'YL01', 'YL08', 'senior', 'THB', 20.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL08', 'MRT_YELLOW', 'YL23', 'YL08', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL09', 'MRT_YELLOW', 'YL01', 'YL09', 'adult', 'THB', 41.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL09', 'MRT_YELLOW', 'YL23', 'YL09', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL09', 'MRT_YELLOW', 'YL01', 'YL09', 'senior', 'THB', 21.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL09', 'MRT_YELLOW', 'YL23', 'YL09', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL10', 'MRT_YELLOW', 'YL01', 'YL10', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL10', 'MRT_YELLOW', 'YL23', 'YL10', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL10', 'MRT_YELLOW', 'YL01', 'YL10', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL10', 'MRT_YELLOW', 'YL23', 'YL10', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL11', 'MRT_YELLOW', 'YL01', 'YL11', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL11', 'MRT_YELLOW', 'YL23', 'YL11', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL11', 'MRT_YELLOW', 'YL01', 'YL11', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL11', 'MRT_YELLOW', 'YL23', 'YL11', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL12', 'MRT_YELLOW', 'YL01', 'YL12', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL12', 'MRT_YELLOW', 'YL23', 'YL12', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL12', 'MRT_YELLOW', 'YL01', 'YL12', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL12', 'MRT_YELLOW', 'YL23', 'YL12', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL13', 'MRT_YELLOW', 'YL01', 'YL13', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL13', 'MRT_YELLOW', 'YL23', 'YL13', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL13', 'MRT_YELLOW', 'YL01', 'YL13', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL13', 'MRT_YELLOW', 'YL23', 'YL13', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL14', 'MRT_YELLOW', 'YL01', 'YL14', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL14', 'MRT_YELLOW', 'YL23', 'YL14', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL14', 'MRT_YELLOW', 'YL01', 'YL14', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL14', 'MRT_YELLOW', 'YL23', 'YL14', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL15', 'MRT_YELLOW', 'YL01', 'YL15', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL15', 'MRT_YELLOW', 'YL23', 'YL15', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL15', 'MRT_YELLOW', 'YL01', 'YL15', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL15', 'MRT_YELLOW', 'YL23', 'YL15', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL16', 'MRT_YELLOW', 'YL01', 'YL16', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL16', 'MRT_YELLOW', 'YL23', 'YL16', 'adult', 'THB', 42.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL16', 'MRT_YELLOW', 'YL01', 'YL16', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL16', 'MRT_YELLOW', 'YL23', 'YL16', 'senior', 'THB', 21.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL17', 'MRT_YELLOW', 'YL01', 'YL17', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL17', 'MRT_YELLOW', 'YL23', 'YL17', 'adult', 'THB', 39.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL17', 'MRT_YELLOW', 'YL01', 'YL17', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL17', 'MRT_YELLOW', 'YL23', 'YL17', 'senior', 'THB', 20.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL18', 'MRT_YELLOW', 'YL01', 'YL18', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL18', 'MRT_YELLOW', 'YL23', 'YL18', 'adult', 'THB', 36.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL18', 'MRT_YELLOW', 'YL01', 'YL18', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL18', 'MRT_YELLOW', 'YL23', 'YL18', 'senior', 'THB', 18.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL19', 'MRT_YELLOW', 'YL01', 'YL19', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL19', 'MRT_YELLOW', 'YL23', 'YL19', 'adult', 'THB', 32.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL19', 'MRT_YELLOW', 'YL01', 'YL19', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL19', 'MRT_YELLOW', 'YL23', 'YL19', 'senior', 'THB', 16.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL20', 'MRT_YELLOW', 'YL01', 'YL20', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL20', 'MRT_YELLOW', 'YL23', 'YL20', 'adult', 'THB', 29.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL20', 'MRT_YELLOW', 'YL01', 'YL20', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL20', 'MRT_YELLOW', 'YL23', 'YL20', 'senior', 'THB', 15.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL21', 'MRT_YELLOW', 'YL01', 'YL21', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL21', 'MRT_YELLOW', 'YL23', 'YL21', 'adult', 'THB', 24.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL21', 'MRT_YELLOW', 'YL01', 'YL21', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL21', 'MRT_YELLOW', 'YL23', 'YL21', 'senior', 'THB', 12.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL22', 'MRT_YELLOW', 'YL01', 'YL22', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL22', 'MRT_YELLOW', 'YL23', 'YL22', 'adult', 'THB', 21.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL22', 'MRT_YELLOW', 'YL01', 'YL22', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL22', 'MRT_YELLOW', 'YL23', 'YL22', 'senior', 'THB', 11.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL01_YL23', 'MRT_YELLOW', 'YL01', 'YL23', 'adult', 'THB', 45.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_adult_YL23_YL23', 'MRT_YELLOW', 'YL23', 'YL23', 'adult', 'THB', 15.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL01_YL23', 'MRT_YELLOW', 'YL01', 'YL23', 'senior', 'THB', 23.0, 'gemini-code-1781773096961.md');
+INSERT INTO fare_matrix (fare_id, line_id, origin_station_id, destination_station_id, ticket_type_id, currency, fare_amount, source_file) VALUES ('MRT_YELLOW_senior_YL23_YL23', 'MRT_YELLOW', 'YL23', 'YL23', 'senior', 'THB', 8.0, 'gemini-code-1781773096961.md');
+INSERT INTO interchanges (interchange_id, station_id_a, station_id_b, is_valid_reference) VALUES ('N17_PK16', 'N17', 'PK16', 1);
+INSERT INTO interchanges (interchange_id, station_id_a, station_id_b, is_valid_reference) VALUES ('G1_S7', 'S7', 'G1', 1);
+INSERT INTO interchanges (interchange_id, station_id_a, station_id_b, is_valid_reference) VALUES ('E15_YL23', 'YL23', 'E15', 1);
+INSERT INTO interchanges (interchange_id, station_id_a, station_id_b, is_valid_reference) VALUES ('PK01_PP11', 'PK01', 'PP11', 0);
+COMMIT;
