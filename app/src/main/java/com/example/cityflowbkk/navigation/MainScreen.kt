@@ -10,8 +10,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.cityflowbkk.features.btsmap.BTSMapScreen
 import com.example.cityflowbkk.features.common.PlaceholderScreen
 import com.example.cityflowbkk.features.home.HomeScreen
+import com.example.cityflowbkk.features.map.MapScreen
+import com.example.cityflowbkk.features.stationmapping.BTSMapScreen as MappingToolScreen
 import com.example.cityflowbkk.ui.icons.HomeIcon
 import com.example.cityflowbkk.ui.navigation.CityFlowBottomBar
 
@@ -21,20 +24,26 @@ fun MainScreen() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    // Hide bottom bar on BtsMap screen
+    val showBottomBar = currentRoute != Screen.BtsMap.route
+
     Scaffold(
         bottomBar = {
-            CityFlowBottomBar(
-                selectedItem = routeToBottomNavItem(currentRoute),
-                onItemClick = { item ->
-                    navController.navigate(item.route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
+            if (showBottomBar) {
+                CityFlowBottomBar(
+                    selectedItem = routeToBottomNavItem(currentRoute),
+                    onItemClick = { item ->
+                        val route = if (item == BottomNavItem.Map) Screen.BtsMap.route else item.route
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
                     }
-                }
-            )
+                )
+            }
         }
     ) { innerPadding ->
         NavHost(
@@ -43,7 +52,23 @@ fun MainScreen() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Home.route) {
-                HomeScreen()
+                HomeScreen(
+                    onNavigateToBtsMap = {
+                        navController.navigate(Screen.BtsMap.route)
+                    },
+                    onNavigateToMap = {
+                        navController.navigate(Screen.Map.route)
+                    },
+                    onPlanRouteClick = {
+                        navController.navigate(Screen.Map.route)
+                    },
+                    onNavigateToStationMapping = {
+                        navController.navigate(Screen.StationMapping.route)
+                    }
+                )
+            }
+            composable(Screen.Map.route) {
+                MapScreen()
             }
             composable(Screen.Route.route) {
                 PlaceholderScreen(title = "Routes", icon = HomeIcon.Route)
@@ -53,6 +78,16 @@ fun MainScreen() {
             }
             composable(Screen.Profile.route) {
                 PlaceholderScreen(title = "Profile", icon = HomeIcon.Profile)
+            }
+            composable(Screen.BtsMap.route) {
+                BTSMapScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.StationMapping.route) {
+                MappingToolScreen(
+                    onBack = { navController.popBackStack() }
+                )
             }
         }
     }

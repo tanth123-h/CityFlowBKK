@@ -18,6 +18,21 @@ data class MapUiState(
     val cameraTarget: MapLatLng = MapLatLng(BANGKOK_LATITUDE, BANGKOK_LONGITUDE),
     val cameraZoom: Float = 12f,
     val isMapReady: Boolean = false,
+    
+    // Station Coordinate Collection
+    val tappedMarkers: List<TappedMarker> = emptyList(),
+    val lastTapX: Float? = null,
+    val lastTapY: Float? = null,
+    
+    // Map Zoom
+    val mapZoom: Float = 1f,  // 1.0x = no zoom, 5.0x = max zoom
+)
+
+@Immutable
+data class TappedMarker(
+    val id: String,
+    val x: Float,  // Normalized 0-1 relative to image
+    val y: Float,  // Normalized 0-1 relative to image
 )
 
 @Immutable
@@ -53,3 +68,6 @@ data class RouteUiModel(
 
 const val BANGKOK_LATITUDE = 13.7563
 const val BANGKOK_LONGITUDE = 100.5018
+const val MIN_MAP_ZOOM = 1f
+const val MAX_MAP_ZOOM = 5f
+const val ZOOM_STEP = 0.2f  // 20% per click

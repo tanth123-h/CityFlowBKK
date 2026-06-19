@@ -1,0 +1,821 @@
+[
+    {
+        "code":  "N24",
+        "name_th":  "คูคต",
+        "name_en":  "Khu Khot",
+        "line":  "Sukhumvit",
+        "x":  2419,
+        "y":  185,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "terminal"
+    },
+    {
+        "code":  "N23",
+        "name_th":  "แยก คปอ.",
+        "name_en":  "Yaek Kor Por Aor",
+        "line":  "Sukhumvit",
+        "x":  2284,
+        "y":  185,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "N22",
+        "name_th":  "พิพิธภัณฑ์กองทัพอากาศ",
+        "name_en":  "Royal Thai Air Force Museum",
+        "line":  "Sukhumvit",
+        "x":  2140,
+        "y":  255,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "N21",
+        "name_th":  "โรงพยาบาลภูมิพลฯ",
+        "name_en":  "Bhumibol Adulyadej Hospital",
+        "line":  "Sukhumvit",
+        "x":  2081,
+        "y":  315,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "N20",
+        "name_th":  "สะพานใหม่",
+        "name_en":  "Saphan Mai",
+        "line":  "Sukhumvit",
+        "x":  2021,
+        "y":  374,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "N19",
+        "name_th":  "สายหยุด",
+        "name_en":  "Sai Yud",
+        "line":  "Sukhumvit",
+        "x":  1962,
+        "y":  432,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "N18",
+        "name_th":  "พหลโยธิน 59",
+        "name_en":  "Phahon Yothin 59",
+        "line":  "Sukhumvit",
+        "x":  1903,
+        "y":  491,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "N17",
+        "name_th":  "วัดพระศรีมหาธาตุ",
+        "name_en":  "Wat Phra Sri Mahathat",
+        "line":  "Sukhumvit",
+        "x":  1824,
+        "y":  593,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "N16",
+        "name_th":  "กรมทหารราบที่ 11",
+        "name_en":  "11th Infantry Regiment",
+        "line":  "Sukhumvit",
+        "x":  1834,
+        "y":  686,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "N15",
+        "name_th":  "บางบัว",
+        "name_en":  "Bang Bua",
+        "line":  "Sukhumvit",
+        "x":  1834,
+        "y":  775,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "N14",
+        "name_th":  "กรมป่าไม้",
+        "name_en":  "Royal Forest Department",
+        "line":  "Sukhumvit",
+        "x":  1835,
+        "y":  865,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "N13",
+        "name_th":  "มหาวิทยาลัยเกษตรฯ",
+        "name_en":  "Kasetsart University",
+        "line":  "Sukhumvit",
+        "x":  1834,
+        "y":  946,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "N12",
+        "name_th":  "เสนานิคม",
+        "name_en":  "Sena Nikhom",
+        "line":  "Sukhumvit",
+        "x":  1835,
+        "y":  1043,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "N11",
+        "name_th":  "รัชโยธิน",
+        "name_en":  "Ratchayothin",
+        "line":  "Sukhumvit",
+        "x":  1835,
+        "y":  1133,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "N10",
+        "name_th":  "พหลโยธิน 24",
+        "name_en":  "Phahon Yothin 24",
+        "line":  "Sukhumvit",
+        "x":  1834,
+        "y":  1225,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "N9",
+        "name_th":  "ห้าแยกลาดพร้าว",
+        "name_en":  "Ha Yaek Lat Phrao",
+        "line":  "Sukhumvit",
+        "x":  1837,
+        "y":  1332,
+        "interchange":  true,
+        "connected_lines":  [
+                                "MRT Blue"
+                            ],
+        "station_type":  "interchange"
+    },
+    {
+        "code":  "N8",
+        "name_th":  "หมอชิต",
+        "name_en":  "Mo Chit",
+        "line":  "Sukhumvit",
+        "x":  1834,
+        "y":  1436,
+        "interchange":  true,
+        "connected_lines":  [
+                                "MRT Blue"
+                            ],
+        "station_type":  "interchange"
+    },
+    {
+        "code":  "N7",
+        "name_th":  "สะพานควาย",
+        "name_en":  "Saphan Khwai",
+        "line":  "Sukhumvit",
+        "x":  1834,
+        "y":  1508,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "N5",
+        "name_th":  "อารีย์",
+        "name_en":  "Ari",
+        "line":  "Sukhumvit",
+        "x":  1834,
+        "y":  1646,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "N4",
+        "name_th":  "สนามเป้า",
+        "name_en":  "Sanam Pao",
+        "line":  "Sukhumvit",
+        "x":  1834,
+        "y":  1715,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "N3",
+        "name_th":  "อนุสาวรีย์ชัยสมรภูมิ",
+        "name_en":  "Victory Monument",
+        "line":  "Sukhumvit",
+        "x":  1835,
+        "y":  1785,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "N2",
+        "name_th":  "พญาไท",
+        "name_en":  "Phaya Thai",
+        "line":  "Sukhumvit",
+        "x":  1835,
+        "y":  1863,
+        "interchange":  true,
+        "connected_lines":  [
+                                "Airport Rail Link"
+                            ],
+        "station_type":  "interchange"
+    },
+    {
+        "code":  "N1",
+        "name_th":  "ราชเทวี",
+        "name_en":  "Ratchathewi",
+        "line":  "Sukhumvit",
+        "x":  1835,
+        "y":  2005,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "CEN",
+        "name_th":  "สยาม",
+        "name_en":  "Siam",
+        "line":  "Sukhumvit",
+        "x":  1866,
+        "y":  2139,
+        "interchange":  true,
+        "connected_lines":  [
+                                "Silom"
+                            ],
+        "station_type":  "interchange"
+    },
+    {
+        "code":  "E1",
+        "name_th":  "ชิดลม",
+        "name_en":  "Chit Lom",
+        "line":  "Sukhumvit",
+        "x":  1971,
+        "y":  2133,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E2",
+        "name_th":  "เพลินจิต",
+        "name_en":  "Phloen Chit",
+        "line":  "Sukhumvit",
+        "x":  2075,
+        "y":  2133,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E3",
+        "name_th":  "นานา",
+        "name_en":  "Nana",
+        "line":  "Sukhumvit",
+        "x":  2178,
+        "y":  2133,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E4",
+        "name_th":  "อโศก",
+        "name_en":  "Asok",
+        "line":  "Sukhumvit",
+        "x":  2283,
+        "y":  2134,
+        "interchange":  true,
+        "connected_lines":  [
+                                "MRT Blue"
+                            ],
+        "station_type":  "interchange"
+    },
+    {
+        "code":  "E5",
+        "name_th":  "พร้อมพงษ์",
+        "name_en":  "Phrom Phong",
+        "line":  "Sukhumvit",
+        "x":  2379,
+        "y":  2133,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E6",
+        "name_th":  "ทองหล่อ",
+        "name_en":  "Thong Lo",
+        "line":  "Sukhumvit",
+        "x":  2463,
+        "y":  2183,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E7",
+        "name_th":  "เอกมัย",
+        "name_en":  "Ekkamai",
+        "line":  "Sukhumvit",
+        "x":  2523,
+        "y":  2244,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E8",
+        "name_th":  "พระโขนง",
+        "name_en":  "Phra Khanong",
+        "line":  "Sukhumvit",
+        "x":  2583,
+        "y":  2304,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E9",
+        "name_th":  "อ่อนนุช",
+        "name_en":  "On Nut",
+        "line":  "Sukhumvit",
+        "x":  2643,
+        "y":  2365,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E10",
+        "name_th":  "บางจาก",
+        "name_en":  "Bang Chak",
+        "line":  "Sukhumvit",
+        "x":  2704,
+        "y":  2425,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E11",
+        "name_th":  "ปุณณวิถี",
+        "name_en":  "Punnawithi",
+        "line":  "Sukhumvit",
+        "x":  2736,
+        "y":  2501,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E12",
+        "name_th":  "อุดมสุข",
+        "name_en":  "Udom Suk",
+        "line":  "Sukhumvit",
+        "x":  2736,
+        "y":  2592,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E13",
+        "name_th":  "บางนา",
+        "name_en":  "Bang Na",
+        "line":  "Sukhumvit",
+        "x":  2736,
+        "y":  2683,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E14",
+        "name_th":  "แบริ่ง",
+        "name_en":  "Bearing",
+        "line":  "Sukhumvit",
+        "x":  2736,
+        "y":  2774,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E15",
+        "name_th":  "สำโรง",
+        "name_en":  "Samrong",
+        "line":  "Sukhumvit",
+        "x":  2736,
+        "y":  2864,
+        "interchange":  true,
+        "connected_lines":  [
+                                "MRT Yellow"
+                            ],
+        "station_type":  "interchange"
+    },
+    {
+        "code":  "E16",
+        "name_th":  "ปู่เจ้า",
+        "name_en":  "Pu Chao",
+        "line":  "Sukhumvit",
+        "x":  2736,
+        "y":  2951,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E17",
+        "name_th":  "ช้างเอราวัณ",
+        "name_en":  "Chang Erawan",
+        "line":  "Sukhumvit",
+        "x":  2736,
+        "y":  3036,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E18",
+        "name_th":  "โรงเรียนนายเรือ",
+        "name_en":  "Royal Thai Naval Academy",
+        "line":  "Sukhumvit",
+        "x":  2735,
+        "y":  3121,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E19",
+        "name_th":  "ปากน้ำ",
+        "name_en":  "Pak Nam",
+        "line":  "Sukhumvit",
+        "x":  2736,
+        "y":  3208,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E20",
+        "name_th":  "ศรีนครินทร์",
+        "name_en":  "Srinagarindra",
+        "line":  "Sukhumvit",
+        "x":  2735,
+        "y":  3292,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E21",
+        "name_th":  "แพรกษา",
+        "name_en":  "Phraek Sa",
+        "line":  "Sukhumvit",
+        "x":  2736,
+        "y":  3378,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E22",
+        "name_th":  "สายลวด",
+        "name_en":  "Sai Luat",
+        "line":  "Sukhumvit",
+        "x":  2736,
+        "y":  3464,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "E23",
+        "name_th":  "เคหะฯ",
+        "name_en":  "Kheha",
+        "line":  "Sukhumvit",
+        "x":  2821,
+        "y":  3588,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "terminal"
+    },
+    {
+        "code":  "W1",
+        "name_th":  "สนามกีฬาแห่งชาติ",
+        "name_en":  "National Stadium",
+        "line":  "Silom",
+        "x":  1725,
+        "y":  2146,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "S1",
+        "name_th":  "ราชดำริ",
+        "name_en":  "Ratchadamri",
+        "line":  "Silom",
+        "x":  1895,
+        "y":  2236,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "S2",
+        "name_th":  "ศาลาแดง",
+        "name_en":  "Sala Daeng",
+        "line":  "Silom",
+        "x":  1895,
+        "y":  2326,
+        "interchange":  true,
+        "connected_lines":  [
+                                "MRT Blue"
+                            ],
+        "station_type":  "interchange"
+    },
+    {
+        "code":  "S3",
+        "name_th":  "ช่องนนทรี",
+        "name_en":  "Chong Nonsi",
+        "line":  "Silom",
+        "x":  1896,
+        "y":  2452,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "S4",
+        "name_th":  "เซนต์หลุยส์",
+        "name_en":  "Saint Louis",
+        "line":  "Silom",
+        "x":  1876,
+        "y":  2562,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "S5",
+        "name_th":  "สุรศักดิ์",
+        "name_en":  "Surasak",
+        "line":  "Silom",
+        "x":  1826,
+        "y":  2613,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "S6",
+        "name_th":  "สะพานตากสิน",
+        "name_en":  "Saphan Taksin",
+        "line":  "Silom",
+        "x":  1775,
+        "y":  2663,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "S7",
+        "name_th":  "กรุงธนบุรี",
+        "name_en":  "Krung Thon Buri",
+        "line":  "Silom",
+        "x":  1625,
+        "y":  2714,
+        "interchange":  true,
+        "connected_lines":  [
+                                "Gold"
+                            ],
+        "station_type":  "interchange"
+    },
+    {
+        "code":  "S8",
+        "name_th":  "วงเวียนใหญ่",
+        "name_en":  "Wongwian Yai",
+        "line":  "Silom",
+        "x":  1464,
+        "y":  2713,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "S9",
+        "name_th":  "โพธิ์นิมิตร",
+        "name_en":  "Pho Nimit",
+        "line":  "Silom",
+        "x":  1297,
+        "y":  2713,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "S10",
+        "name_th":  "ตลาดพลู",
+        "name_en":  "Talat Phlu",
+        "line":  "Silom",
+        "x":  1131,
+        "y":  2713,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "S11",
+        "name_th":  "วุฒากาศ",
+        "name_en":  "Wutthakat",
+        "line":  "Silom",
+        "x":  1131,
+        "y":  2772,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "S12",
+        "name_th":  "บางหว้า",
+        "name_en":  "Bang Wa",
+        "line":  "Silom",
+        "x":  953,
+        "y":  2632,
+        "interchange":  true,
+        "connected_lines":  [
+                                "MRT Blue"
+                            ],
+        "station_type":  "interchange"
+    },
+    {
+        "code":  "G1",
+        "name_th":  "กรุงธนบุรี",
+        "name_en":  "Krung Thon Buri",
+        "line":  "Gold",
+        "x":  1625,
+        "y":  2664,
+        "interchange":  true,
+        "connected_lines":  [
+                                "Silom"
+                            ],
+        "station_type":  "interchange"
+    },
+    {
+        "code":  "G2",
+        "name_th":  "เจริญนคร",
+        "name_en":  "Charoen Nakhon",
+        "line":  "Gold",
+        "x":  1578,
+        "y":  2575,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "regular"
+    },
+    {
+        "code":  "G3",
+        "name_th":  "คลองสาน",
+        "name_en":  "Khlong San",
+        "line":  "Gold",
+        "x":  1484,
+        "y":  2518,
+        "interchange":  false,
+        "connected_lines":  [
+
+                            ],
+        "station_type":  "terminal"
+    }
+]

@@ -1,0 +1,82 @@
+{
+  "_source": "Bangkok BTS Group Rail Transit Database Specification. Effective 2026-01-01.",
+
+  "coreNetwork": {
+    "_desc": "BTS Core Concession: Mo Chit to On Nut (N8-E9) and National Stadium to Saphan Taksin (W1-S6).",
+    "min": 17, "max": 47,
+    "fareSteps": [
+      {"stations": 0, "fare": 17},
+      {"stations": 1, "fare": 17},
+      {"stations": 2, "fare": 25},
+      {"stations": 3, "fare": 28},
+      {"stations": 4, "fare": 32},
+      {"stations": 5, "fare": 35},
+      {"stations": 6, "fare": 40},
+      {"stations": 7, "fare": 43},
+      {"stations": 8, "fare": 47}
+    ]
+  },
+
+  "extensionNetwork": {
+    "_desc": "BTS Green Line extensions: Mo Chit-Khu Khot, Bearing-Kheha, Wongwian Yai-Bang Wa. Cross-network cap: 65 THB.",
+    "min": 17, "max": 45, "crossNetworkCap": 65,
+    "fareSteps": [
+      {"stations": 0,  "fare": 17},
+      {"stations": 1,  "fare": 17},
+      {"stations": 2,  "fare": 19},
+      {"stations": 3,  "fare": 21},
+      {"stations": 4,  "fare": 23},
+      {"stations": 5,  "fare": 25},
+      {"stations": 6,  "fare": 28},
+      {"stations": 7,  "fare": 31},
+      {"stations": 8,  "fare": 34},
+      {"stations": 9,  "fare": 37},
+      {"stations": 10, "fare": 40},
+      {"stations": 11, "fare": 43},
+      {"stations": 12, "fare": 45}
+    ]
+  },
+
+  "goldLine": {
+    "_desc": "BTS Gold Line flat rate. Revised to 17 THB effective 2026-01-01.",
+    "flatFare": 17
+  },
+
+  "yellowLine": {
+    "_desc": "MRT Yellow Line (Eastern Bangkok Monorail). 15-45 THB by station count.",
+    "min": 15, "max": 45,
+    "fareSteps": [
+      {"stations": 0,  "fare": 15},
+      {"stations": 1,  "fare": 15},
+      {"stations": 2,  "fare": 18},
+      {"stations": 3,  "fare": 21},
+      {"stations": 4,  "fare": 24},
+      {"stations": 5,  "fare": 27},
+      {"stations": 6,  "fare": 30},
+      {"stations": 7,  "fare": 33},
+      {"stations": 8,  "fare": 36},
+      {"stations": 9,  "fare": 39},
+      {"stations": 10, "fare": 42},
+      {"stations": 11, "fare": 45}
+    ]
+  },
+
+  "pinkLine": {
+    "_desc": "MRT Pink Line (Northern Bangkok Monorail). Same fare steps as Yellow Line.",
+    "min": 15, "max": 45,
+    "fareSteps": [
+      {"stations": 0,  "fare": 15},
+      {"stations": 1,  "fare": 15},
+      {"stations": 2,  "fare": 18},
+      {"stations": 3,  "fare": 21},
+      {"stations": 4,  "fare": 24},
+      {"stations": 5,  "fare": 27},
+      {"stations": 6,  "fare": 30},
+      {"stations": 7,  "fare": 33},
+      {"stations": 8,  "fare": 36},
+      {"stations": 9,  "fare": 39},
+      {"stations": 10, "fare": 42},
+      {"stations": 11, "fare": 45}
+    ]
+  }
+}
