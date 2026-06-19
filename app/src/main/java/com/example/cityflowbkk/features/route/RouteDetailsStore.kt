@@ -21,4 +21,8 @@ data class RouteDetailsPayload(
     val destinationName: String,
     val destinationAddress: String?,
     val routeResult: RouteResult,
+    /** Name of the nearest BTS/MRT station to the user's origin, if station-first routing was used. */
+    val nearestOriginStationName: String? = null,
+    /** Name of the nearest BTS/MRT station to the destination, if station-first routing was used. */
+    val nearestDestinationStationName: String? = null,
 )

@@ -141,6 +141,27 @@ object FareRepository {
     }
 
     fun detectTransitType(details: TransitDetails): TransitType {
+        // Step 1 — structured vehicle type (most reliable)
+        val vehicleType = details.vehicleType?.uppercase(Locale.US).orEmpty()
+        when {
+            vehicleType in setOf("TRAM", "MONORAIL") -> return TransitType.BTS
+            vehicleType in setOf("HEAVY_RAIL", "SUBWAY", "METRO_RAIL") -> return TransitType.MRT
+            vehicleType == "BUS" -> return TransitType.UNKNOWN
+        }
+
+        // Step 2 — agency name (second most reliable)
+        val agencyText = details.agencies.joinToString(" ").lowercase(Locale.US)
+        when {
+            agencyText.contains("bts") ||
+                agencyText.contains("bangkok mass transit system") ||
+                agencyText.contains("krungthep thanakom") -> return TransitType.BTS
+            agencyText.contains("mrta") ||
+                agencyText.contains("metropolitan rapid transit") ||
+                agencyText.contains("northern bangkok monorail") ||
+                agencyText.contains("eastern bangkok monorail") -> return TransitType.MRT
+        }
+
+        // Step 3 — fall back to keyword matching on line/stop names
         val searchableText = details.searchableText()
         if (btsKeywords.any { searchableText.contains(it) }) return TransitType.BTS
         if (mrtKeywords.any { searchableText.contains(it) }) return TransitType.MRT

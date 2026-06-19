@@ -294,10 +294,10 @@ class MapViewModel(
         routeJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoadingRoute = true, errorMessage = null) }
             try {
-                val result = directionsRepository.getRoute(
+                val result = directionsRepository.getRoutes(
                     origin = origin,
                     destination = MapLatLng(destination.latitude, destination.longitude),
-                )
+                ).first()
                 _uiState.update {
                     it.copy(
                         route = result.route,

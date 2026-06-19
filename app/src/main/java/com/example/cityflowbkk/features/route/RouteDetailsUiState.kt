@@ -12,6 +12,8 @@ data class RouteDetailsUiState(
 sealed class RouteTimelineItemUiModel {
     data class Origin(
         val label: String,
+        /** Nearest BTS/MRT station name, shown when station-first routing was used. */
+        val nearestStationName: String? = null,
     ) : RouteTimelineItemUiModel()
 
     data class WalkingSegment(
@@ -31,5 +33,7 @@ sealed class RouteTimelineItemUiModel {
     data class Destination(
         val placeName: String,
         val address: String?,
+        /** Nearest BTS/MRT station name, shown when station-first routing was used. */
+        val nearestStationName: String? = null,
     ) : RouteTimelineItemUiModel()
 }

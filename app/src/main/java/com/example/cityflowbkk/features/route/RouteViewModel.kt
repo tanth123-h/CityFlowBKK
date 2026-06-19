@@ -1,6 +1,7 @@
 package com.example.cityflowbkk.features.route
 
 import android.app.Application
+import android.util.Log
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -71,6 +72,7 @@ class RouteViewModel(
                 arrivalAlertStationName = null,
                 transitDetails = null,
                 routeDetailsId = null,
+                routeBounds = null,
                 travelRecommendations = emptyList(),
                 routeGuidanceOptions = emptyList(),
                 selectedGuidanceMode = null,
@@ -399,7 +401,61 @@ class RouteViewModel(
             }
 
             try {
-                val transitRoute = directionsRepository.getRoute(origin, dest, mode = "transit")
+                // Look up nearest stations for display/fare only — NOT used for routing.
+                // Google Directions API handles all BTS/MRT/transfer logic internally.
+                val stationPair = StationRepository.findNearestPairWithFallback(origin, dest)
+                if (stationPair != null) {
+                    Log.d(DIAG, "Nearest stations (display only):" +
+                        " origin=${stationPair.originStation.name} (${stationPair.originStation.lineName})" +
+                        " %.0fm".format(stationPair.originDistanceMeters) +
+                        " | dest=${stationPair.destinationStation.name} (${stationPair.destinationStation.lineName})" +
+                        " %.0fm".format(stationPair.destinationDistanceMeters))
+                } else {
+                    Log.d(DIAG, "No nearby stations within search radius.")
+                }
+
+                // Single Google Directions transit request using real origin/destination.
+                // Google resolves BTS, MRT, Airport Rail Link, transfers, and walking.
+                Log.d(DIAG, "Requesting transit route:" +
+                    " origin=(%.6f, %.6f)".format(origin.latitude, origin.longitude) +
+                    " dest=(%.6f, %.6f)".format(dest.latitude, dest.longitude))
+
+                val routes = directionsRepository.getRoutes(origin, dest, mode = "transit")
+                val transitRoute = routes.selectBestRoute()
+
+                // Log every transit segment so the response is fully visible in logcat
+                val foundTransitSegments = transitRoute.segments.filter {
+                    it.travelMode == GoogleTravelMode.TRANSIT
+                }
+                if (foundTransitSegments.isEmpty()) {
+                    Log.w(DIAG, "NO transit segments in selected route — route is walking-only.")
+                    Log.w(DIAG, "  Google found no BTS/MRT/ARL service for this origin/destination pair.")
+                    Log.w(DIAG, "  Total segments: ${transitRoute.segments.size}")
+                    transitRoute.segments.forEach { seg ->
+                        Log.w(DIAG, "    segment travelMode=${seg.travelMode}" +
+                            " transportType=${seg.transportType}" +
+                            " dist=${seg.distanceText} dur=${seg.durationText}")
+                    }
+                } else {
+                    Log.d(DIAG, "Transit segments found: ${foundTransitSegments.size}")
+                    foundTransitSegments.forEachIndexed { i, seg ->
+                        val td = seg.transitDetails
+                        if (td != null) {
+                            Log.d(DIAG, "  TRANSIT[$i] FOUND:")
+                            Log.d(DIAG, "    line.name      : ${td.lineName}")
+                            Log.d(DIAG, "    line.short_name: ${td.lineShortName ?: "n/a"}")
+                            Log.d(DIAG, "    vehicle.type   : ${td.vehicleType ?: "n/a"}")
+                            Log.d(DIAG, "    vehicle.name   : ${td.vehicleName ?: "n/a"}")
+                            Log.d(DIAG, "    departure_stop : ${td.departureStop}")
+                            Log.d(DIAG, "    arrival_stop   : ${td.arrivalStop}")
+                            Log.d(DIAG, "    num_stops      : ${td.numStops}")
+                            Log.d(DIAG, "    transportType  : ${seg.transportType.diagColorName()}")
+                            Log.d(DIAG, "    agencies       : ${td.agencies}")
+                        } else {
+                            Log.w(DIAG, "  TRANSIT[$i] segment has null transitDetails")
+                        }
+                    }
+                }
                 val uiSegments = transitRoute.segments.map { segment ->
                     val segmentType = when (segment.travelMode) {
                         GoogleTravelMode.WALKING -> RouteSegmentType.Walking
@@ -413,6 +469,7 @@ class RouteViewModel(
                         segmentType = segmentType,
                         transportType = segment.transportType,
                         instruction = segment.instruction,
+                        width = if (segmentType == RouteSegmentType.Transit) 14f else 6f,
                     )
                 }
 
@@ -452,6 +509,8 @@ class RouteViewModel(
                         destinationName = destination.name,
                         destinationAddress = destination.address,
                         routeResult = transitRoute,
+                        nearestOriginStationName = stationPair?.originStation?.name,
+                        nearestDestinationStationName = stationPair?.destinationStation?.name,
                     ),
                 )
 
@@ -468,6 +527,7 @@ class RouteViewModel(
                         transitDetails = transitDetails,
                         routeDetailsId = routeDetailsId,
                         isCalculatingRoute = false,
+                        routeBounds = computeRouteBounds(transitRoute.points),
                         routeResult = transitRoute.toRouteResultText(transitDetails),
                         routeMessage = null,
                     )
@@ -504,6 +564,7 @@ class RouteViewModel(
                         transitDetails = null,
                         routeDetailsId = null,
                         isCalculatingRoute = false,
+                        routeBounds = null,
                         routeMessage = exception.message ?: "Could not calculate route.",
                     )
                 }
@@ -763,6 +824,19 @@ class RouteViewModel(
         }
     }
 
+    /** Diagnostic-only: returns a human-readable colour name for logcat output. */
+    private fun RouteTransportType.diagColorName(): String = when (this) {
+        RouteTransportType.WALKING           -> "BLUE(walking)"
+        RouteTransportType.BTS_SUKHUMVIT     -> "LIGHT_GREEN(bts-sukhumvit)"
+        RouteTransportType.BTS_SILOM         -> "DARK_GREEN(bts-silom)"
+        RouteTransportType.MRT_BLUE          -> "BLUE(mrt-blue)"
+        RouteTransportType.MRT_PURPLE        -> "PURPLE(mrt-purple)"
+        RouteTransportType.AIRPORT_RAIL_LINK -> "RED(arl)"
+        RouteTransportType.BUS               -> "ORANGE(bus)"
+        RouteTransportType.DRIVING           -> "GREY(driving)"
+        RouteTransportType.UNKNOWN_TRANSIT   -> "GREEN(unknown-transit)"
+    }
+
     private fun com.example.cityflowbkk.features.map.MapPlaceUiModel.toDestinationResultText(): String {
         return buildString {
             append(name)
@@ -799,7 +873,150 @@ class RouteViewModel(
         }
     }
 
+    /**
+     * Builds a 3-leg route: walk → transit (station-to-station) → walk.
+     *
+     * Leg A: walking  origin → originStation
+     * Leg B: transit  originStation → destStation  (plain transit; Google picks the rail line)
+     * Leg C: walking  destStation → destination
+     *
+     * Returns null if leg B returns no transit segments (Google couldn't find a rail path
+     * between those two station coordinates), so the caller falls back to Google default.
+     */
+    private suspend fun buildThreeLegRoute(
+        origin: MapLatLng,
+        destination: MapLatLng,
+        originStation: MapLatLng,
+        destStation: MapLatLng,
+    ): RouteResult? {
+        // Run all three legs — leg A and C in parallel, leg B independently
+        val legA = directionsRepository.getWalkingRoute(origin, originStation)
+        val legB = directionsRepository.getStationTransitRoute(originStation, destStation)
+        val legC = directionsRepository.getWalkingRoute(destStation, destination)
+
+        Log.d(DIAG, "  Leg A (walk): ${legA.route.durationText} ${legA.route.distanceText}" +
+            " — ${legA.segments.size} segment(s)")
+        Log.d(DIAG, "  Leg B (transit): ${legB?.route?.durationText ?: "NULL"}")
+        Log.d(DIAG, "  Leg C (walk): ${legC.route.durationText} ${legC.route.distanceText}" +
+            " — ${legC.segments.size} segment(s)")
+
+        if (legB == null) {
+            Log.w(DIAG, "  Leg B returned null — no transit route between stations")
+            return null
+        }
+
+        val legBTransitSegments = legB.segments.filter { it.travelMode == GoogleTravelMode.TRANSIT }
+        if (legBTransitSegments.isEmpty()) {
+            Log.w(DIAG, "  Leg B has no TRANSIT segments — Google returned walking between stations")
+            return null
+        }
+
+        legBTransitSegments.forEach { seg ->
+            val td = seg.transitDetails
+            if (td != null) {
+                Log.d(DIAG, "  Leg B rail: ${td.lineName} | ${td.vehicleType ?: "?"}" +
+                    " | ${td.departureStop}→${td.arrivalStop} | ${td.numStops} stops")
+            }
+        }
+
+        // Re-index all segments sequentially across the three legs
+        var idx = 0
+        val allSegments = (legA.segments + legB.segments + legC.segments)
+            .map { it.copy(index = idx++) }
+        val allSteps = (legA.steps + legB.steps + legC.steps)
+            .mapIndexed { i, step -> step.copy(index = i) }
+        val allPoints = legA.points + legB.points + legC.points
+
+        if (allSegments.isEmpty()) return null
+
+        val totalMeters  = legA.route.distanceMeters + legB.route.distanceMeters + legC.route.distanceMeters
+        val totalSeconds = legA.route.durationSeconds + legB.route.durationSeconds + legC.route.durationSeconds
+
+        return com.example.cityflowbkk.features.map.RouteResult(
+            route = com.example.cityflowbkk.features.map.RouteUiModel(
+                distanceText    = totalMeters.toDistanceText(),
+                distanceMeters  = totalMeters,
+                durationText    = totalSeconds.toDurationText(),
+                durationSeconds = totalSeconds,
+                arrivalTimeText = formatArrivalTime(totalSeconds),
+            ),
+            points   = allPoints,
+            segments = allSegments,
+            steps    = allSteps,
+            fareText     = legB.fareText,
+            fareCurrency = legB.fareCurrency,
+            fareValue    = legB.fareValue,
+        )
+    }
+
+    /**
+     * Computes an axis-aligned bounding box from all polyline points with 10% padding.
+     * Returns null if the point list is empty or degenerate (single point).
+     */
+    private fun computeRouteBounds(points: List<com.example.cityflowbkk.features.map.MapLatLng>): RouteBounds? {
+        if (points.size < 2) return null
+        val minLat = points.minOf { it.latitude }
+        val maxLat = points.maxOf { it.latitude }
+        val minLng = points.minOf { it.longitude }
+        val maxLng = points.maxOf { it.longitude }
+        // Add 10% padding on each axis so markers are not clipped by sheet or search bar
+        val latPad = (maxLat - minLat) * 0.10
+        val lngPad = (maxLng - minLng) * 0.10
+        return RouteBounds(
+            swLat = minLat - latPad,
+            swLng = minLng - lngPad,
+            neLat = maxLat + latPad,
+            neLng = maxLng + lngPad,
+        )
+    }
+
+    /**
+     * Selects the best route from a list of Google Directions alternatives.
+     *
+     * Only walk + BTS/MRT/ARL routes are considered. Bus and driving are excluded.
+     *
+     * Priority:
+     *  1. Routes containing at least one rail segment (BTS, MRT, Airport Rail Link).
+     *     Among these, prefer fewest transit legs (fewer transfers), then shortest duration.
+     *  2. Walk-only routes — used when the destination has no nearby rail station.
+     *  3. First result as last resort (should not normally be reached after stripping).
+     */
+    private fun List<RouteResult>.selectBestRoute(): RouteResult {
+        val railTypes = setOf(
+            RouteTransportType.BTS_SUKHUMVIT,
+            RouteTransportType.BTS_SILOM,
+            RouteTransportType.MRT_BLUE,
+            RouteTransportType.MRT_PURPLE,
+            RouteTransportType.AIRPORT_RAIL_LINK,
+        )
+
+        // Exclude any route that still contains bus or driving segments
+        val cleanRoutes = filter { route ->
+            route.segments.none {
+                it.transportType == RouteTransportType.BUS ||
+                it.transportType == RouteTransportType.DRIVING
+            }
+        }
+
+        val railRoutes = cleanRoutes.filter { route ->
+            route.segments.any { it.transportType in railTypes }
+        }
+
+        return if (railRoutes.isNotEmpty()) {
+            railRoutes.minWith(
+                compareBy(
+                    { route -> route.segments.count { it.travelMode == GoogleTravelMode.TRANSIT } },
+                    { route -> route.route.durationSeconds },
+                ),
+            )
+        } else {
+            // No rail available — return the shortest clean (walk-only) route
+            cleanRoutes.minByOrNull { it.route.durationSeconds } ?: first()
+        }
+    }
+
     companion object {
+        private const val DIAG = "CityFlowDiag"
         private const val SEARCH_DEBOUNCE_MS = 300L
         private const val DEVIATION_RECALCULATION_THROTTLE_MS = 30_000L
     }

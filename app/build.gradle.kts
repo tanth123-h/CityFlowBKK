@@ -7,11 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.cityflowbkk"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.cityflowbkk"
@@ -27,7 +23,6 @@ android {
         if (localPropertiesFile.exists()) {
             localProperties.load(localPropertiesFile.inputStream())
         }
- tindersuper
         val mapsApiKey = localProperties.getProperty("MAPS_API_KEY") ?: ""
         buildConfigField("String", "MAPS_API_KEY", "\"$mapsApiKey\"")
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
@@ -38,7 +33,6 @@ android {
         val googleMapsApiKey = localProperties.getProperty("GOOGLE_MAPS_API_KEY") ?: ""
         buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"$googleMapsApiKey\"")
         manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = googleMapsApiKey
-master
     }
 
     buildTypes {

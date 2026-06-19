@@ -273,6 +273,7 @@ private fun TimelineContent(item: RouteTimelineItemUiModel) {
                 title = "Origin",
                 primary = item.label,
                 secondary = null,
+                nearestStation = item.nearestStationName,
             )
 
             is RouteTimelineItemUiModel.WalkingSegment -> WalkingContent(item)
@@ -282,6 +283,7 @@ private fun TimelineContent(item: RouteTimelineItemUiModel) {
                 title = "Destination",
                 primary = item.placeName,
                 secondary = item.address,
+                nearestStation = item.nearestStationName,
             )
         }
     }
@@ -292,6 +294,7 @@ private fun LocationContent(
     title: String,
     primary: String,
     secondary: String?,
+    nearestStation: String? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Text(
@@ -310,6 +313,14 @@ private fun LocationContent(
                 text = it,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        nearestStation?.let {
+            Text(
+                text = "Nearest station: $it",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold,
             )
         }
     }

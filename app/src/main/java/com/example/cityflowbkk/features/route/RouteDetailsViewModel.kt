@@ -29,7 +29,12 @@ class RouteDetailsViewModel(
 
     private fun RouteDetailsPayload.toUiState(): RouteDetailsUiState {
         val timelineItems = buildList {
-            add(RouteTimelineItemUiModel.Origin(label = "Current location"))
+            add(
+                RouteTimelineItemUiModel.Origin(
+                    label = "Current location",
+                    nearestStationName = nearestOriginStationName,
+                ),
+            )
 
             routeResult.segments.forEach { segment ->
                 when (segment.travelMode) {
@@ -64,12 +69,20 @@ class RouteDetailsViewModel(
                 RouteTimelineItemUiModel.Destination(
                     placeName = destinationName,
                     address = destinationAddress,
+                    nearestStationName = nearestDestinationStationName,
                 ),
             )
         }
 
+        // Build a descriptive title when we know which stations were used
+        val routeTitle = when {
+            nearestOriginStationName != null && nearestDestinationStationName != null ->
+                "${nearestOriginStationName} → ${nearestDestinationStationName}"
+            else -> "Transit details"
+        }
+
         return RouteDetailsUiState(
-            routeTitle = "Transit details",
+            routeTitle = routeTitle,
             totalDurationText = routeResult.route.durationText,
             totalDistanceText = routeResult.route.distanceText,
             fareText = routeResult.fareText,

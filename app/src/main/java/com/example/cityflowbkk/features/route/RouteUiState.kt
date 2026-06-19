@@ -36,6 +36,7 @@ data class RouteUiState(
     val transitDetails: TransitRouteDetailsUiModel? = null,
     val routeDetailsId: String? = null,
     val isCalculatingRoute: Boolean = false,
+    val routeBounds: RouteBounds? = null,
     val travelRecommendations: List<TravelRecommendationUiModel> = emptyList(),
     val routeGuidanceOptions: List<RouteGuidanceUiModel> = emptyList(),
     val selectedGuidanceMode: TravelMode? = null,
@@ -70,6 +71,7 @@ data class RouteSegmentUiModel(
     val segmentType: RouteSegmentType,
     val transportType: RouteTransportType,
     val instruction: String,
+    val width: Float,
 )
 
 enum class RouteSegmentType {
@@ -100,6 +102,17 @@ data class RouteMapMarkerUiModel(
     val snippet: String?,
     val latitude: Double,
     val longitude: Double,
+)
+
+/**
+ * Axis-aligned bounding box covering the full route polyline.
+ * Used to fit the map camera so the entire route is visible.
+ */
+data class RouteBounds(
+    val swLat: Double,
+    val swLng: Double,
+    val neLat: Double,
+    val neLng: Double,
 )
 
 enum class TravelMode(

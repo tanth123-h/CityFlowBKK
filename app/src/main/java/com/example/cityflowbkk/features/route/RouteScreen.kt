@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -84,6 +85,7 @@ import com.example.cityflowbkk.ui.theme.CityFlowBlue
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
@@ -205,15 +207,19 @@ private fun RouteContent(
     // FullyExpanded is achieved by the user dragging the sheet all the way up
     // (BottomSheetScaffold natively supports drag-to-full).
     val navSheetPeekHeight = when (navSheetState) {
-        NavSheetState.Collapsed    -> 76.dp
-        NavSheetState.HalfExpanded -> 320.dp
+        NavSheetState.Collapsed     -> 76.dp
+        NavSheetState.HalfExpanded  -> 320.dp
         NavSheetState.FullyExpanded -> 320.dp // sheet is dragged open by scaffold
     }
+
+    // Planner peek shows exactly: drag handle + summary row + Start Navigation button
+    val plannerPeekHeight = 100.dp
+    val currentPeekHeight = if (uiState.isNavigating) navSheetPeekHeight else plannerPeekHeight
 
     BottomSheetScaffold(
         modifier = modifier,
         scaffoldState = bottomSheetScaffoldState,
-        sheetPeekHeight = if (uiState.isNavigating) navSheetPeekHeight else 180.dp,
+        sheetPeekHeight = currentPeekHeight,
         sheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         sheetContainerColor = MaterialTheme.colorScheme.surface,
         sheetContent = {
@@ -246,6 +252,7 @@ private fun RouteContent(
         Box(modifier = Modifier.fillMaxSize()) {
             RouteMap(
                 uiState = uiState,
+                sheetPeekHeight = currentPeekHeight.value.toInt(),
                 onMapLoaded = onMapLoaded,
                 onRecenterMap = onRecenterMap,
                 onMapClick = onMapClick,
@@ -938,7 +945,15 @@ private fun ArrivalStationAlertDialog(
     )
 }
 
-// ─── Route Planner Bottom Sheet content (non-navigation mode, unchanged) ──────
+// ─── Route Planner Bottom Sheet content (non-navigation mode) ─────────────────
+//
+// Layout:
+//  ┌──────────────────────────────────────────┐  ← peek (always visible, ~100 dp)
+//  │  drag handle                             │
+//  │  [ETA/Distance/Fare chips] [Start Nav]   │
+//  ├──────────────────────────────────────────┤  ← expanded (scroll)
+//  │  transit details, steps, settings, etc.  │
+//  └──────────────────────────────────────────┘
 
 @Composable
 private fun RouteBottomSheetContent(
@@ -957,103 +972,218 @@ private fun RouteBottomSheetContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp)
-            .padding(top = 4.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            .navigationBarsPadding(),
     ) {
-        Text(
-            text = "Route Planner",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-
-        ArrivalAlertSettingsCard(
-            enabled = uiState.arrivalAlertsEnabled,
-            thresholdMeters = uiState.alertDistanceThresholdMeters,
-            onEnabledChange = onArrivalAlertsEnabledChange,
-            onThresholdChange = onAlertDistanceThresholdChange,
-        )
-
-        uiState.locationMessage?.let { message ->
-            LocationMessageCard(message = message, onDismiss = onDismissLocationMessage)
-        }
-        uiState.searchMessage?.let { message ->
-            MessageCard(message = message, onDismiss = onDismissSearchMessage)
-        }
-        uiState.routeMessage?.let { message ->
-            MessageCard(message = message, onDismiss = onDismissRouteMessage, isError = false)
-        }
-
-        uiState.droppedPin?.let { pin ->
-            DroppedPinRouteCard(
-                pin = pin,
-                isCalculatingRoute = uiState.isCalculatingRoute,
-                onSetAsDestination = onSetPinAsDestination,
-                onNavigateHere = onNavigateToPin,
-                onCalculateRoute = onCalculateRouteToPin,
+        // ── Drag handle ───────────────────────────────────────────────────
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp, bottom = 6.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(36.dp)
+                    .height(4.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                        shape = RoundedCornerShape(2.dp),
+                    ),
             )
         }
 
-        if (uiState.isCalculatingRoute || uiState.route != null) {
-            RouteSummaryCard(uiState = uiState, isCalculatingRoute = uiState.isCalculatingRoute)
+        // ── Peek row — always visible above the fold ──────────────────────
+        // Shows the essential route summary and the Start Navigation button.
+        // Height is intentionally compact so ≥70% of the screen stays as map.
+        PlannerPeekRow(
+            uiState = uiState,
+            onStartNavigation = onStartNavigation,
+        )
+
+        // ── Expanded content — only visible when sheet is dragged up ──────
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(top = 8.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            uiState.locationMessage?.let { message ->
+                LocationMessageCard(message = message, onDismiss = onDismissLocationMessage)
+            }
+            uiState.searchMessage?.let { message ->
+                MessageCard(message = message, onDismiss = onDismissSearchMessage)
+            }
+            uiState.routeMessage?.let { message ->
+                MessageCard(message = message, onDismiss = onDismissRouteMessage, isError = false)
+            }
+
+            uiState.droppedPin?.let { pin ->
+                DroppedPinRouteCard(
+                    pin = pin,
+                    isCalculatingRoute = uiState.isCalculatingRoute,
+                    onSetAsDestination = onSetPinAsDestination,
+                    onNavigateHere = onNavigateToPin,
+                    onCalculateRoute = onCalculateRouteToPin,
+                )
+            }
+
+            uiState.transitDetails?.let { details ->
+                TransitRouteDetailsCard(details = details)
+            }
+
+            uiState.routeDetailsId?.let { routeDetailsId ->
+                OutlinedButton(
+                    onClick = { onNavigateToDetails(routeDetailsId) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    HomeIconGraphic(
+                        icon = HomeIcon.Route,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = "View full route details",
+                        modifier = Modifier.padding(start = 8.dp),
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+
+            if (uiState.navigationSteps.isNotEmpty()) {
+                NavigationStepsSection(
+                    steps = uiState.navigationSteps,
+                    activeStepIndex = uiState.activeNavigationStepIndex,
+                )
+            }
+
+            ArrivalAlertSettingsCard(
+                enabled = uiState.arrivalAlertsEnabled,
+                thresholdMeters = uiState.alertDistanceThresholdMeters,
+                onEnabledChange = onArrivalAlertsEnabledChange,
+                onThresholdChange = onAlertDistanceThresholdChange,
+            )
+        }
+    }
+}
+
+// ── Planner peek row ──────────────────────────────────────────────────────────
+
+@Composable
+private fun PlannerPeekRow(
+    uiState: RouteUiState,
+    onStartNavigation: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // Summary chips — duration, distance, fare
+        if (uiState.isCalculatingRoute) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                strokeWidth = 2.5.dp,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = "Calculating…",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+        } else if (uiState.route != null) {
+            // Duration chip
+            PeekChip(
+                value = uiState.route.durationText,
+                label = uiState.route.arrivalTimeText,
+                modifier = Modifier.weight(1f),
+            )
+            // Distance chip
+            PeekChip(
+                value = uiState.route.distanceText,
+                label = "distance",
+                modifier = Modifier.weight(1f),
+            )
+            // Fare chip — only shown when available
+            uiState.transitDetails?.totalTransitFareText
+                ?.takeIf { it.isNotBlank() && it != "Unavailable" }
+                ?.let { fare ->
+                    PeekChip(
+                        value = fare,
+                        label = "fare",
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+        } else {
+            Text(
+                text = "Search a destination above",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
         }
 
-        uiState.currentNavigationInstruction?.let { instruction ->
-            ActiveNavigationCard(instruction = instruction, isOffRoute = uiState.isOffRoute)
-        }
-
-        uiState.transitDetails?.let { details ->
-            TransitRouteDetailsCard(details = details)
-        }
-
-        if (uiState.route != null && !uiState.isNavigating) {
+        // Start Navigation button — only when route is ready
+        if (uiState.route != null && !uiState.isCalculatingRoute) {
             Button(
                 onClick = onStartNavigation,
-                modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = CityFlowBlue),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(14.dp),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
             ) {
-                HomeIconGraphic(icon = HomeIcon.Route, contentDescription = null, tint = Color.White)
+                HomeIconGraphic(
+                    icon = HomeIcon.Route,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp),
+                )
                 Text(
-                    text = "Start Navigation",
-                    modifier = Modifier.padding(start = 8.dp),
+                    text = "Go",
+                    modifier = Modifier.padding(start = 6.dp),
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
+                    style = MaterialTheme.typography.labelLarge,
                 )
             }
         }
+    }
+}
 
-        uiState.routeDetailsId?.let { routeDetailsId ->
-            Button(
-                onClick = { onNavigateToDetails(routeDetailsId) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                HomeIconGraphic(icon = HomeIcon.Route, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
-                Text(
-                    text = "View route details",
-                    modifier = Modifier.padding(start = 8.dp),
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-        }
-
-        RouteInfoSection(title = "Route Result", body = uiState.routeResult, icon = HomeIcon.Route)
-
-        if (uiState.travelRecommendations.isNotEmpty()) {
-            TravelRecommendationsSection(
-                recommendations = uiState.travelRecommendations,
-                onRecommendationClick = { uiState.routeDetailsId?.let(onNavigateToDetails) },
+@Composable
+private fun PeekChip(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(1.dp),
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-        }
-
-        if (uiState.navigationSteps.isNotEmpty()) {
-            NavigationStepsSection(
-                steps = uiState.navigationSteps,
-                activeStepIndex = uiState.activeNavigationStepIndex,
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -1229,6 +1359,7 @@ private fun DestinationSuggestions(
 @Composable
 private fun RouteMap(
     uiState: RouteUiState,
+    sheetPeekHeight: Int,
     onMapLoaded: () -> Unit,
     onRecenterMap: () -> Unit,
     onMapClick: (MapLatLng) -> Unit,
@@ -1239,17 +1370,41 @@ private fun RouteMap(
         position = CameraPosition.fromLatLngZoom(cameraTarget, uiState.cameraZoom)
     }
 
+    // Fit the camera to the full route bounds when a route is loaded.
+    // Falls back to simple lat/lng zoom when no bounds are available.
+    LaunchedEffect(uiState.routeBounds) {
+        val bounds = uiState.routeBounds
+        if (bounds != null) {
+            val latLngBounds = LatLngBounds(
+                LatLng(bounds.swLat, bounds.swLng),
+                LatLng(bounds.neLat, bounds.neLng),
+            )
+            // padding: 80px top (search bar) + sheetPeekHeight converted px equivalent handled
+            // by the map's own contentPadding; use 64px here as extra visual buffer
+            cameraPositionState.animate(
+                update = CameraUpdateFactory.newLatLngBounds(latLngBounds, 64),
+                durationMs = 700,
+            )
+        }
+    }
+
     LaunchedEffect(uiState.cameraTargetLatitude, uiState.cameraTargetLongitude, uiState.cameraZoom) {
-        cameraPositionState.animate(
-            update = CameraUpdateFactory.newLatLngZoom(cameraTarget, uiState.cameraZoom),
-            durationMs = 500,
-        )
+        // Only drive point zoom when there are no route bounds to show
+        if (uiState.routeBounds == null) {
+            cameraPositionState.animate(
+                update = CameraUpdateFactory.newLatLngZoom(cameraTarget, uiState.cameraZoom),
+                durationMs = 500,
+            )
+        }
     }
 
     Box(modifier = modifier) {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
+            // Push map UI controls (compass, zoom buttons) above the bottom sheet
+            // so destination markers are never hidden behind it
+            contentPadding = PaddingValues(bottom = sheetPeekHeight.dp),
             properties = MapProperties(isMyLocationEnabled = uiState.hasLocationPermission),
             uiSettings = MapUiSettings(
                 zoomControlsEnabled = true,
@@ -1312,11 +1467,15 @@ private fun RouteMap(
             }
 
             if (uiState.routeSegments.isNotEmpty()) {
-                uiState.routeSegments.forEach { segment ->
+                // Draw walking segments first (underneath), then transit segments (on top)
+                val sortedSegments = uiState.routeSegments.sortedBy { segment ->
+                    if (segment.segmentType == RouteSegmentType.Walking) 0 else 1
+                }
+                sortedSegments.forEach { segment ->
                     Polyline(
                         points = segment.points.map { LatLng(it.latitude, it.longitude) },
                         color = segment.color,
-                        width = if (segment.index == uiState.activeNavigationStepIndex) 14f else 9f,
+                        width = segment.width,
                     )
                 }
             } else if (uiState.overviewPolyline.isNotEmpty()) {
@@ -1328,12 +1487,12 @@ private fun RouteMap(
             }
         }
 
-        // Recenter FAB — raised enough to sit above the navigation sheet
+        // Recenter FAB — sits above the bottom sheet peek area
         FloatingActionButton(
             onClick = onRecenterMap,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = if (uiState.isNavigating) 340.dp else 196.dp),
+                .padding(end = 16.dp, bottom = (sheetPeekHeight + 16).dp),
             containerColor = MaterialTheme.colorScheme.primary,
         ) {
             if (uiState.isLocationLoading) {

@@ -17,30 +17,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-Myheero
-import com.example.cityflowbkk.features.btsmap.BTSMapScreen
-import com.example.cityflowbkk.features.common.PlaceholderScreen
-import com.example.cityflowbkk.features.home.HomeScreen
-import com.example.cityflowbkk.features.map.MapScreen
-import com.example.cityflowbkk.features.stationmapping.BTSMapScreen as MappingToolScreen
-=======
 import androidx.navigation.navArgument
-tindersuper
 import com.example.cityflowbkk.features.common.PlaceholderScreen
 import com.example.cityflowbkk.features.home.HomeScreen
-import com.example.cityflowbkk.features.map.MapScreen
+import com.example.cityflowbkk.features.btsmap.BTSMapScreen
 import com.example.cityflowbkk.features.tour.DiscoverBangkokScreen
 import com.example.cityflowbkk.features.tour.DiscoverViewModel
 import com.example.cityflowbkk.features.tour.SavedPlaceDetailScreen
 import com.example.cityflowbkk.features.tour.SavedPlacesScreen
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.cityflowbkk.features.common.PlaceholderScreen
-import com.example.cityflowbkk.features.home.HomeScreen
 import com.example.cityflowbkk.features.route.RouteScreen
 import com.example.cityflowbkk.features.route.RouteDetailsScreen
-import com.example.cityflowbkk.features.route.RouteDetailsViewModel
- master
- master
 import com.example.cityflowbkk.ui.icons.HomeIcon
 import com.example.cityflowbkk.ui.navigation.CityFlowBottomBar
 
@@ -53,20 +39,6 @@ fun MainScreen(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
- Myheero
-    // Hide bottom bar on BtsMap screen
-    val showBottomBar = currentRoute != Screen.BtsMap.route
-
-    Scaffold(
-        bottomBar = {
-            if (showBottomBar) {
-                CityFlowBottomBar(
-                    selectedItem = routeToBottomNavItem(currentRoute),
-                    onItemClick = { item ->
-                        val route = if (item == BottomNavItem.Map) Screen.BtsMap.route else item.route
-                        navController.navigate(route) {
-=======
- tindersuper
     val discoverViewModel: DiscoverViewModel = viewModel()
 
     // Hide bottom bar on these full-screen routes
@@ -77,6 +49,7 @@ fun MainScreen(
     )
     val shouldShowBottomBar = noBottomBarRoutes.none { pattern ->
         currentRoute?.startsWith(pattern.substringBefore("{")) == true
+    }
 
     LaunchedEffect(routeRequestVersion, requestedStartRoute) {
         val route = requestedStartRoute ?: return@LaunchedEffect
@@ -87,7 +60,6 @@ fun MainScreen(
             launchSingleTop = true
             restoreState = true
         }
- master
     }
 
     Scaffold(
@@ -97,7 +69,6 @@ fun MainScreen(
                     selectedItem = routeToBottomNavItem(currentRoute),
                     onItemClick = { item ->
                         navController.navigate(item.route) {
- master
                             popUpTo(navController.graph.findStartDestination().id) {
                                 saveState = true
                             }
@@ -116,27 +87,7 @@ fun MainScreen(
         ) {
             composable(Screen.Home.route) {
                 HomeScreen(
- Myheero
-                    onNavigateToBtsMap = {
-                        navController.navigate(Screen.BtsMap.route)
-                    },
-                    onNavigateToMap = {
-                        navController.navigate(Screen.Map.route)
-                    },
-                    onPlanRouteClick = {
-                        navController.navigate(Screen.Map.route)
-                    },
-                    onNavigateToStationMapping = {
-                        navController.navigate(Screen.StationMapping.route)
-                    }
-                )
-            }
-            composable(Screen.Map.route) {
-                MapScreen()
-=======
-tindersuper
-                    onTourClick = { navController.navigate(Screen.DiscoverBangkok.route) }
-
+                    onTourClick = { navController.navigate(Screen.DiscoverBangkok.route) },
                     onPlanRouteClick = {
                         navController.navigate(Screen.Route.route) {
                             popUpTo(navController.graph.findStartDestination().id) {
@@ -146,9 +97,7 @@ tindersuper
                             restoreState = true
                         }
                     },
- master
                 )
- master
             }
             composable(Screen.Route.route) {
                 RouteScreen(
@@ -178,19 +127,10 @@ tindersuper
             composable(Screen.Profile.route) {
                 PlaceholderScreen(title = "Profile", icon = HomeIcon.Profile)
             }
- Myheero
-            composable(Screen.BtsMap.route) {
-                BTSMapScreen(
-                    onBack = { navController.popBackStack() }
-                )
-            }
-            composable(Screen.StationMapping.route) {
-                MappingToolScreen(
-                    onBack = { navController.popBackStack() }
-                )
-=======
             composable(Screen.Map.route) {
-                MapScreen()
+                BTSMapScreen(
+                    onBack = { navController.popBackStack() },
+                )
             }
             composable(Screen.DiscoverBangkok.route) {
                 DiscoverBangkokScreen(
@@ -229,7 +169,6 @@ tindersuper
                         Text("Place not found. Please go back and try again.")
                     }
                 }
- master
             }
         }
     }

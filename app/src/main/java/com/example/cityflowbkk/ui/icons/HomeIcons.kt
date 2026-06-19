@@ -28,6 +28,12 @@ enum class HomeIcon {
     Map,
     Station,
     Profile,
+    Warning,
+    Back,
+    Walk,
+    ChevronUp,
+    ChevronDown,
+    Car,
 }
 
 @Composable
@@ -152,6 +158,72 @@ fun HomeIconGraphic(
                     quadraticTo(size.width * 0.5f, size.height * 0.56f, size.width * 0.82f, size.height * 0.86f)
                 }
                 drawPath(shoulders, tint, style = stroke)
+            }
+
+            HomeIcon.Warning -> {
+                val triangle = Path().apply {
+                    moveTo(size.width * 0.5f, size.height * 0.14f)
+                    lineTo(size.width * 0.9f, size.height * 0.82f)
+                    lineTo(size.width * 0.1f, size.height * 0.82f)
+                    close()
+                }
+                drawPath(triangle, tint, style = stroke)
+                drawLine(tint, point(0.5f, 0.38f), point(0.5f, 0.58f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                drawCircle(tint, radius = size.minDimension * 0.05f, center = point(0.5f, 0.69f))
+            }
+
+            HomeIcon.Back -> {
+                drawLine(tint, point(0.62f, 0.22f), point(0.3f, 0.5f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                drawLine(tint, point(0.3f, 0.5f), point(0.62f, 0.78f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+            }
+
+            HomeIcon.Walk -> {
+                // Head
+                drawCircle(tint, radius = size.minDimension * 0.1f, center = point(0.6f, 0.18f))
+                // Body and legs
+                val body = Path().apply {
+                    moveTo(size.width * 0.42f, size.height * 0.44f)
+                    lineTo(size.width * 0.6f, size.height * 0.32f)
+                    lineTo(size.width * 0.7f, size.height * 0.56f)
+                    lineTo(size.width * 0.56f, size.height * 0.66f)
+                    lineTo(size.width * 0.66f, size.height * 0.86f)
+                }
+                drawPath(body, tint, style = stroke)
+                drawLine(tint, point(0.42f, 0.44f), point(0.34f, 0.64f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                drawLine(tint, point(0.7f, 0.56f), point(0.46f, 0.86f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+            }
+
+            HomeIcon.ChevronUp -> {
+                drawLine(tint, point(0.26f, 0.64f), point(0.5f, 0.36f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                drawLine(tint, point(0.5f, 0.36f), point(0.74f, 0.64f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+            }
+
+            HomeIcon.ChevronDown -> {
+                drawLine(tint, point(0.26f, 0.36f), point(0.5f, 0.64f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                drawLine(tint, point(0.5f, 0.64f), point(0.74f, 0.36f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+            }
+
+            HomeIcon.Car -> {
+                // Car body
+                val body = Path().apply {
+                    moveTo(size.width * 0.12f, size.height * 0.62f)
+                    lineTo(size.width * 0.22f, size.height * 0.38f)
+                    lineTo(size.width * 0.78f, size.height * 0.38f)
+                    lineTo(size.width * 0.88f, size.height * 0.62f)
+                    close()
+                }
+                drawPath(body, tint, style = stroke)
+                // Roof
+                val roof = Path().apply {
+                    moveTo(size.width * 0.32f, size.height * 0.38f)
+                    lineTo(size.width * 0.4f, size.height * 0.24f)
+                    lineTo(size.width * 0.6f, size.height * 0.24f)
+                    lineTo(size.width * 0.68f, size.height * 0.38f)
+                }
+                drawPath(roof, tint, style = stroke)
+                // Wheels
+                drawCircle(tint, radius = size.minDimension * 0.1f, center = point(0.27f, 0.72f), style = stroke)
+                drawCircle(tint, radius = size.minDimension * 0.1f, center = point(0.73f, 0.72f), style = stroke)
             }
         }
     }

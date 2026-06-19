@@ -15,6 +15,5 @@ enum class BottomNavItem(
 }
 
 fun routeToBottomNavItem(route: String?): BottomNavItem {
-    if (route == Screen.BtsMap.route) return BottomNavItem.Map
     return BottomNavItem.entries.firstOrNull { it.route == route } ?: BottomNavItem.Home
 }
